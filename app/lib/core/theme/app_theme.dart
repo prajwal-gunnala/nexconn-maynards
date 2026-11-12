@@ -1,6 +1,5 @@
 import 'package:ai_nexconn_chatui_plugin/ai_nexconn_chatui_plugin.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'tokens.dart';
 
@@ -11,7 +10,7 @@ class AppText {
   const AppText._();
 
   static TextStyle _f(double size, FontWeight w, {Color color = AppColors.ink, double? height}) =>
-      GoogleFonts.plusJakartaSans(fontSize: size, fontWeight: w, color: color, height: height);
+      TextStyle(fontFamily: 'PlusJakartaSans', fontFamilyFallback: const ['Roboto'], fontSize: size, fontWeight: w, color: color, height: height);
 
   /// Hero numbers and onboarding titles.
   static TextStyle get display => _f(28, FontWeight.w800, height: 1.15);
@@ -52,7 +51,8 @@ class AppTheme {
       splashFactory: InkSparkle.splashFactory,
       // google_fonts 9 builds on the decoupled `material_ui` package, so its
       // *TextTheme helpers return a different TextTheme type. Use the family.
-      fontFamily: GoogleFonts.plusJakartaSans().fontFamily,
+      fontFamily: 'PlusJakartaSans',
+      fontFamilyFallback: const ['Roboto'],
     );
     final text = base.textTheme.apply(bodyColor: AppColors.ink, displayColor: AppColors.ink);
     return base.copyWith(

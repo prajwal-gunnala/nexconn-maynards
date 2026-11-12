@@ -49,3 +49,6 @@ app.*.map.json
 
 # build output lives on /mnt/storage via a symlink
 /build
+
+# screenshot test output (review artefacts)
+/test/golden/shots/
