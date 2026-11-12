@@ -21,3 +21,6 @@ build/
 docs/design/reference/
 # Generated media sources
 media/
+
+# Server runtime data (JSON store, smoke copies)
+server/data/

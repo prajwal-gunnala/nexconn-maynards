@@ -1,0 +1,19 @@
+{
+  "name": "jugaad-street-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Jugaad Street API: community bucket buys inside Nexconn group chats",
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "node --test test/*.test.js",
+    "seed": "node scripts/seed.js",
+    "smoke": "node scripts/smoke.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}

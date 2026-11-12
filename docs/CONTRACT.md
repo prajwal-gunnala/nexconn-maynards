@@ -139,3 +139,19 @@ Devgad Mango FPO `…14`, Al-Noor Meats `…15`.
 Buckets: seer split (8 cuts, 6 claimed), basmati bulk (tiers 25→₹96, 100→₹88; 82 kg filled), pest control service
 (tiers 10→₹480, 25→₹400, 50→₹340; 31 flats), Koyambedu trip (capacity 300 kg, 186 booked), Alphonso bulk (dozens),
 Bakrid goat split (7 shares, `hold`), Kasimedu book-and-meet (2 halves, `at_market`, meet Gate 3 Sun 6:00).
+
+## Additions from the server build (all compatible with the above)
+- Rules: a hold is quoted at the tier reached including the member's own quantity, and the amount captured is never more
+  than the amount held. `payMode` must match the bucket's `settleMode` (`PAY_MODE_NOT_ALLOWED`). A split bucket, or a full
+  trip or lot, locks the moment its last part is paid; bulk and service buckets go ahead at the cutoff if the first tier is
+  reached; a trip goes ahead at the cutoff once `minLoadKg` is reached. Unpaid `pending_payment` shares are released after 15 min.
+- Bucket adds `description, unitPrice, minQty, maxQty, lotQty, maxUnitsPerMember, optionGroups:[{key,label,choices}],
+  minLoadKg, transportFee, orderId, closedAt`; `progress` adds `goAt`, and `transportPerKg` for trips. `units` is null
+  except on split buckets, `items` null except on trips.
+- Share adds `qtyLabel, orderId, savings`. Order adds `communityId, vendorId, image, pickupPoint, window, myLine`. Lines add
+  `shareId, options, savings`, and `transport` on trips. Members only see their own OTP. `at_market` lines go `due` → `paid`.
+- WalletEntry: `{id, shareId, bucketId, title, image, orderId, kind:"held"|"paid"|"released"|"at_market", amount, savings, at}`.
+- Image keys: `seer basmati pest koyambedu alphonso goat paarai prawns banana crab`; communities `seabreeze palmgrove`.
+- Street group id is `community.streetGroupId`. `js:event` kinds: `joined left locked expired nudge checkin`.
+- Error codes: see `server/README.md`.
+- Demo: re-seed just before recording (`npm run seed` with the API stopped); cutoffs are relative to seed time.
