@@ -42,8 +42,9 @@ class AppImages {
     ('festive', 'Festive'),
     ('services', 'Home Services'),
   ];
-  static String category(String id) => '$_c/cat_$id.jpg';
+  static const _catFile = {'dairy': 'dairy_eggs', 'services': 'home_services'};
+  static String category(String id) => '$_c/cat_${_catFile[id] ?? id}.jpg';
 
-  static const banners = <String>['$_b/banner_kasimedu.jpg', '$_b/banner_mango.jpg', '$_b/banner_society.jpg'];
+  static const banners = <String>['$_b/banner_kasimedu.jpg', '$_b/banner_mango.jpg', '$_b/banner_neighbours.jpg'];
   static String onboarding(int i) => '$_o/onboard_$i.jpg';
 }
