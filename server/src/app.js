@@ -40,6 +40,7 @@ export function createApp(service, { logger = console, log = true } = {}) {
 
   app.use('/api', auth);
   app.get('/api/me', h((req) => service.me(req.user)));
+  app.get('/api/users', h((req) => service.profiles(String(req.query.ids ?? '').split(',').filter(Boolean))));
   app.get('/api/me/orders', h((req) => service.myOrders(req.user)));
   app.get('/api/me/wallet', h((req) => service.wallet(req.user)));
 

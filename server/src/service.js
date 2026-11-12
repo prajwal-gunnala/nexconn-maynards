@@ -157,6 +157,21 @@ export class JugaadService {
     };
   }
 
+  /** Display profiles for chat (names, flat, role) — no phone numbers. */
+  profiles(ids = []) {
+    const BOT = { id: 'jugaad_bot', name: 'Jugaad Street', unit: null, kind: 'bot', label: 'Jugaad Street' };
+    return ids.slice(0, 200).map((id) => {
+      if (id === 'jugaad_bot') return BOT;
+      const u = this.store.user(id);
+      if (!u) return null;
+      const vendor = this.store.vendorByUser(u.id);
+      const m = this.store.membershipsOf(u.id)[0];
+      const unit = m?.unit ?? null;
+      const label = vendor ? `${vendor.name} · vendor` : unit ? `${u.name} · ${unit}` : u.name;
+      return { id: u.id, name: vendor?.name ?? u.name, unit, kind: vendor ? 'vendor' : (m?.role ?? u.kind ?? 'member'), label };
+    }).filter(Boolean);
+  }
+
   // ---- communities ---------------------------------------------------------------------------
   communities(q = '') {
     const needle = String(q).trim().toLowerCase();

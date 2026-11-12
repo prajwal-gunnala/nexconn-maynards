@@ -155,3 +155,5 @@ Bakrid goat split (7 shares, `hold`), Kasimedu book-and-meet (2 halves, `at_mark
 - Street group id is `community.streetGroupId`. `js:event` kinds: `joined left locked expired nudge checkin`.
 - Error codes: see `server/README.md`.
 - Demo: re-seed just before recording (`npm run seed` with the API stopped); cutoffs are relative to seed time.
+- `GET /api/users?ids=a,b,c` → `[{id, name, unit, kind:"member"|"admin"|"vendor"|"bot", label}]` display profiles for chat
+  (label e.g. "Ravi · C-801", "Murugan Fish Stall · vendor", "Jugaad Street"). No phone numbers.
