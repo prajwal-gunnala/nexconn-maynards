@@ -1,6 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
+import '../../core/images.dart';
+
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/tokens.dart';
 
@@ -69,7 +71,7 @@ class BucketPhoto extends StatelessWidget {
       img = CachedNetworkImage(imageUrl: url!, fit: BoxFit.cover, errorWidget: (_, _, _) => fallback, placeholder: (_, _) => fallback);
     } else {
       img = Image.asset(
-        'assets/images/${visual.key}.jpg',
+        AppImages.bucket(visual.key) ?? 'assets/images/${visual.key}.jpg',
         fit: BoxFit.cover,
         errorBuilder: (_, _, _) => fallback,
       );
