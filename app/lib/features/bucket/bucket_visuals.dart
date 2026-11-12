@@ -18,7 +18,7 @@ class BucketVisual {
   static BucketVisual of(String keyOrTitle) {
     final k = keyOrTitle.toLowerCase();
     bool has(List<String> words) => words.any(k.contains);
-    if (has(['seer', 'fish', 'tuna', 'rohu', 'hilsa', 'prawn', 'kasimedu', 'pomfret'])) {
+    if (has(['seer', 'fish', 'tuna', 'rohu', 'hilsa', 'prawn', 'kasimedu', 'pomfret', 'crab', 'paarai'])) {
       return BucketVisual(keyOrTitle, const Color(0xFFE3F0FA), Icons.set_meal_rounded);
     }
     if (has(['basmati', 'rice', 'atta', 'dal', 'oil', 'sack'])) {
@@ -44,7 +44,7 @@ class BucketVisual {
 /// when [url] is given, else an asset `assets/images/<key>.jpg`, else the
 /// tinted icon fallback.
 class BucketPhoto extends StatelessWidget {
-  const BucketPhoto({super.key, required this.visual, this.url, this.height = 140, this.badge});
+  const BucketPhoto({super.key, required this.visual, this.url, this.height = 140, this.badge, this.borderRadius});
 
   final BucketVisual visual;
   final String? url;
@@ -52,6 +52,9 @@ class BucketPhoto extends StatelessWidget {
 
   /// Small label in the top-left corner (e.g. `Split`).
   final String? badge;
+
+  /// Defaults to the photo radius (12). Pass [BorderRadius.zero] for full-bleed heroes.
+  final BorderRadius? borderRadius;
 
   @override
   Widget build(BuildContext context) {
@@ -77,7 +80,7 @@ class BucketPhoto extends StatelessWidget {
       );
     }
     return ClipRRect(
-      borderRadius: AppRadius.photoBorder,
+      borderRadius: borderRadius ?? AppRadius.photoBorder,
       child: SizedBox(
         height: height,
         width: double.infinity,
