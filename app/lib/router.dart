@@ -36,7 +36,12 @@ GoRouter buildRouter(SessionStore session) {
       final path = state.uri.path;
       final isPublic = publicPaths.contains(path);
       if (!session.isLoggedIn) return isPublic ? null : '/welcome';
-      if (!session.hasCommunity) return path == '/community/join' ? null : '/community/join';
+      final isVendor = session.user?.role == 'vendor';
+      if (!session.hasCommunity) {
+        // Vendors sell to communities; they don't need to live in one.
+        if (isVendor) return path == '/vendor' || path.startsWith('/chat') || path.startsWith('/orders') ? null : '/vendor';
+        return path == '/community/join' ? null : '/community/join';
+      }
       if (isPublic) return '/street'; // /community/join stays reachable to switch or join another community
       return null;
     },
