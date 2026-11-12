@@ -37,7 +37,7 @@ GoRouter buildRouter(SessionStore session) {
       final isPublic = publicPaths.contains(path);
       if (!session.isLoggedIn) return isPublic ? null : '/welcome';
       if (!session.hasCommunity) return path == '/community/join' ? null : '/community/join';
-      if (isPublic || path == '/community/join') return '/street';
+      if (isPublic) return '/street'; // /community/join stays reachable to switch or join another community
       return null;
     },
     routes: [
