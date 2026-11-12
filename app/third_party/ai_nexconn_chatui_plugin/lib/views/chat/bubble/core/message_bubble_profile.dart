@@ -3,6 +3,21 @@ part of '../message_bubble.dart';
 extension _MessageBubbleProfile on _MessageBubbleBase {
   Widget _avatar(BuildContext context, ChatProfileInfo? profile) {
     final avatar = config.bubbleConfig.avatarConfig;
+    // JUGAAD PATCH: host-drawn avatar (initials / brand mark).
+    final hosted = JugaadKitHooks.avatarBuilder?.call(
+      context,
+      message,
+      profile,
+      avatar.size,
+    );
+    if (hosted != null) {
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onAvatarTap,
+        onLongPress: onAvatarLongPress,
+        child: SizedBox.square(dimension: avatar.size, child: hosted),
+      );
+    }
     final imageUrl = _profileAvatar(profile);
     final fallback = DecoratedBox(
       decoration: BoxDecoration(

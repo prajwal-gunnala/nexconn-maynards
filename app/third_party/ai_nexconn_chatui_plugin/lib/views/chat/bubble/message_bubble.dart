@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../models/chat_profile_info.dart';
+import '../../../jugaad_hooks.dart'; // JUGAAD PATCH
 import '../../../providers/audio_player_provider.dart';
 import '../../../providers/chat_provider.dart';
 import '../../../providers/engine_provider.dart';

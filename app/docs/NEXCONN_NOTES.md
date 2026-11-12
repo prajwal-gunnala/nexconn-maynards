@@ -90,11 +90,31 @@ live), `11_bucket_detail` (card tap), `12_chats_tab`.
 | Connect | `code 0` first time; `34001` after a hot restart (treated as success, `userId` is null then). |
 | Event replay | On connect, the SDK replays every metadata change since the message was sent, oldest first (seen: 82→92→82→92→82→87 for basmati, matching the server's join/leave history). Last event = server truth. |
 
+## Names, titles, avatars, previews (chat polish)
+Public kit hooks we use (no patch needed):
+- `ChatPageConfig.profileProvider` / `ChannelConfig.profileProvider` → `ChatDirectory.kitProfile`
+  (`lib/features/chat/chat_directory.dart`). With `message` it returns the sender (`label` from
+  `GET /api/users?ids=`, batched every 25 ms, cached per ApiClient; `extra` = kind); without it the channel
+  title (`street_<id>` → "Sea Breeze Street" from the community, `bucket_<id>` → bucket title, direct → name).
+  The kit caches the per-message future by `channel#sender`.
+- `ChatPage.appBarBuilder` → our `ChatHeader` (avatar, title, "286 neighbours · 7 live buckets", search via the
+  kit's `ChatMessageSearchPage`, info sheet). It watches `ChatProvider.multiSelectMode` to show Cancel.
+- `ChatPage.onMessageAvatarTap` → person sheet with "Message <name>" (opens a direct chat, e.g. a vendor DM).
+- `ChannelItemConfig.avatarBuilder/titleBuilder/lastMessageBuilder/unreadBadgeBuilder` + `timeStyle` for the
+  Chats tab; `ChannelPage.channelListDataProcessor` pins `street_*` on top.
+
+## Kit patches (all marked `// JUGAAD PATCH`, re-apply on upgrade)
+| File | Change |
+|---|---|
+| `lib/jugaad_hooks.dart` (new, exported from `ai_nexconn_chatui_plugin.dart`) | `JugaadKitHooks.isSystemRow`, `.avatarBuilder`, `.summary` static hooks; null = upstream behaviour |
+| `views/chat/bubble/core/message_bubble_layout.dart` | (1) custom bubbles get no kit bubble/padding (earlier patch); (2) if `isSystemRow(message)` and a custom builder exists, render it centred with only the time separator (no avatar, name, status) → `js:event` pills |
+| `views/chat/bubble/core/message_bubble_profile.dart` | `_avatar` asks `avatarBuilder` first (the kit only draws `http` portraits) → initials avatars + "JS" bot mark |
+| `utils/message_content_util.dart` | `messageSummary` asks `summary` for custom messages before `[customMessage]` → readable reply quotes / search / default previews |
+| `views/chat/bubble/message_bubble.dart` | import of `jugaad_hooks.dart` (parts share it) |
+
+Hooks are installed by `installChatHooks()` (`group_chat_screen.dart`) from GroupChatScreen and ChatsScreen.
+
 ## Known gaps / next steps
-- Sender names and channel titles show raw ids (`jugaad_bot`, `u_meera`, `Group street_c_seabreeze`)
-  and the channel preview says `[customMessage]`. Fix with `ChatPageConfig.profileProvider` /
-  `ChannelConfig.profileProvider` (resolve names from our API) and a channel item builder.
-- `js:event` renders inside the avatar row; it could become a centred system line.
 - Real photos: drop `assets/images/<imageKey>.jpg` (seer, basmati, …) and `BucketPhoto` uses them.
 - Push notifications not set up (`enablePush` off).
 

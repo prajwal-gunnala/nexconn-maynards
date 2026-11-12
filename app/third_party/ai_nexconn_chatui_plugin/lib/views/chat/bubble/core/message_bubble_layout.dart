@@ -27,6 +27,28 @@ extension _MessageBubbleLayout on _MessageBubbleBase {
         ),
       );
     }
+    // JUGAAD PATCH: centred system rows (e.g. js:event) skip avatar/name/status.
+    if (customBuilder != null &&
+        (JugaadKitHooks.isSystemRow?.call(message) ?? false)) {
+      return GestureDetector(
+        onTap: onTap,
+        onLongPress: onLongPress,
+        onLongPressStart: onLongPressStart,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (showTime) _timeSeparator(context),
+            Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: resolvedVerticalPadding(verticalPadding),
+              ),
+              child: Center(child: customBuilder(context, message, config)),
+            ),
+          ],
+        ),
+      );
+    }
     final sent = message.direction == MessageDirection.send;
     final style = sent
         ? config.bubbleConfig.sentStyle

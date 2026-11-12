@@ -90,6 +90,7 @@ export 'app_providers.dart';
 export 'l10n/nexconn_chat_ui_l10n.dart';
 
 export 'models/chat_profile_info.dart';
+export 'jugaad_hooks.dart'; // JUGAAD PATCH
 export 'models/nexconn_user_profile.dart';
 export 'models/user_at_info.dart';
 

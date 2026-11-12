@@ -5,6 +5,7 @@ import 'package:rongcloud_im_wrapper_plugin/rongcloud_im_wrapper_plugin.dart'
 import '../l10n/nexconn_chat_ui_localizations.dart';
 import '../l10n/nexconn_chat_ui_localizations_en.dart';
 import 'message_type_util.dart';
+import '../jugaad_hooks.dart'; // JUGAAD PATCH
 
 String get deletedForEveryoneMessageText =>
     NexconnChatUILocalizationsEn().messageDeletedForEveryone;
@@ -59,6 +60,11 @@ String messageSummary(
     final summary = _customGroupNotificationSummary(message, l10n);
     if (summary != null) {
       return summary;
+    }
+    // JUGAAD PATCH: host summary for custom message types.
+    final hosted = JugaadKitHooks.summary?.call(message);
+    if (hosted != null) {
+      return hosted;
     }
   }
   if (isDeleteForAllPlaceholderMessage(message)) {
