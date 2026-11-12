@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Jugaad Street App Flow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;600;700&family=Manrope:wght@500;600;700;800&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=DM+Sans:wght@400;500;600;700&family=Sora:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: sticky top bar with direction switcher; sections stacked: journeys, screens (grouped, numbered = real order), claim sequence, lifecycles, data model, Nexconn map. */
+:root{--page:#F2F1EE;--ink:#151515;--sub:#5E5E58;--rule:#DAD9D3;--board:#FBFBF9;--hl:#6B4BFF}
+@media (prefers-color-scheme:dark){:root{--page:#0F0F0F;--ink:#ECECE6;--sub:#9B9B95;--rule:#272727;--board:#161616;--hl:#A996FF;color-scheme:dark}}
+*{box-sizing:border-box;margin:0}
+body{background:var(--page);color:var(--ink);font:15px/1.55 Inter,system-ui,sans-serif}
+.topbar{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--page) 88%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--rule)}
+.topbar div{max-width:1240px;margin:0 auto;padding:12px max(16px,3vw);display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.topbar b{font:800 18px "Bricolage Grotesque",Inter,sans-serif}
+.topbar nav{display:flex;gap:14px;flex-wrap:wrap;font-size:13px}
+.topbar a{color:var(--sub);text-decoration:none}.topbar a:hover{color:var(--ink)}
+.dirs{display:flex;gap:4px;background:var(--board);border:1px solid var(--rule);border-radius:12px;padding:3px}
+.dirs button{border:0;background:none;color:var(--sub);font:600 12px Inter,sans-serif;padding:6px 10px;border-radius:9px;cursor:pointer}
+.dirs button.on{background:var(--ink);color:var(--page)}
+.dirs button:focus-visible{outline:2px solid var(--hl)}
+main{max-width:1240px;margin:0 auto;padding:36px max(16px,3vw) 90px;display:grid;gap:56px}
+section{display:grid;gap:18px;scroll-margin-top:80px}
+h1{font:800 clamp(30px,4.4vw,50px)/1.02 "Bricolage Grotesque",Inter,sans-serif;letter-spacing:-.025em;max-width:22ch;text-wrap:balance}
+h2{font:800 28px/1.1 "Bricolage Grotesque",Inter,sans-serif;letter-spacing:-.02em}
+h3{font:700 13px Inter,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--sub);margin-top:6px}
+.lede{color:var(--sub);max-width:72ch}
+.panel{background:var(--board);border:1px solid var(--rule);border-radius:24px;padding:22px;overflow-x:auto}
+.types{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media (max-width:900px){.types{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:480px){.types{grid-template-columns:1fr}}
+.type{background:var(--board);border:1px solid var(--rule);border-radius:18px;padding:16px;display:grid;gap:6px;align-content:start}
+.type b{font:800 18px "Bricolage Grotesque",Inter,sans-serif}
+.type span{font-size:13px;color:var(--sub)}
+.type em{font-style:normal;font-size:12px;font-weight:600;color:var(--hl)}
+.screens{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:26px 18px}
+.shot{display:grid;gap:8px;align-content:start}
+.cap{font-size:13px;display:grid;gap:2px;padding:0 4px}
+.cap b{font-weight:700}.cap span{color:var(--sub);font-size:12px}
+.cap i{font-style:normal;font-weight:700;color:var(--hl);margin-right:6px;font-variant-numeric:tabular-nums}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:620px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--sub)}
+code{font:12.5px ui-monospace,Menlo,monospace;background:color-mix(in srgb,var(--hl) 12%,transparent);padding:1px 6px;border-radius:6px}
+.mermaid{display:flex;justify-content:center;min-width:640px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:18px}@media (max-width:900px){.two{grid-template-columns:1fr}}
+
+/* ---------- phone kit (colours from --x-*) ---------- */
+.ph{width:100%;max-width:250px;margin:0 auto;aspect-ratio:9/19.5;border-radius:36px;padding:6px;background:#0A0A0A;box-shadow:0 26px 50px -26px rgb(0 0 0 / .45)}
+.sc{position:relative;height:100%;border-radius:31px;overflow:hidden;background:var(--x-bg);color:var(--x-text);font-family:var(--x-body);font-size:10.5px;line-height:1.35;display:flex;flex-direction:column}
+.st{display:flex;justify-content:space-between;padding:9px 18px 3px;font-weight:600;font-size:10px}
+.pd{padding:6px 13px;display:flex;flex-direction:column;gap:9px;flex:1;min-height:0;overflow:hidden}
+.ds{font-family:var(--x-disp);letter-spacing:-.015em}
+.mu{color:var(--x-muted)}
+.cd{background:var(--x-card);border-radius:20px;border:1px solid var(--x-line);box-shadow:var(--x-shadow);backdrop-filter:blur(14px)}
+.pl{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:3px 8px;font-weight:700;font-size:9px;white-space:nowrap}
+.lv{background:var(--x-livebg);color:var(--x-live)}
+.tg{background:var(--x-tbg);color:var(--x-text)}
+.cta{border-radius:15px;padding:11px;text-align:center;font-weight:700;font-size:12px;background:var(--x-accent);color:var(--x-on)}
+.gh{border-radius:15px;padding:10px;text-align:center;font-weight:600;font-size:11.5px;border:1px solid var(--x-line)}
+.av{width:19px;height:19px;border-radius:50%;display:grid;place-items:center;font-size:8.5px;font-weight:700;color:#fff;border:2px solid var(--x-solid);flex:none}
+.sk{display:flex}.sk .av+.av{margin-left:-7px}
+.br{height:6px;border-radius:9px;background:var(--x-tbg);overflow:hidden;position:relative}.br i{display:block;height:100%;border-radius:9px;background:var(--x-accent)}
+.rw{display:flex;align-items:center;gap:9px}.sb{justify-content:space-between}
+.nv{margin:0 12px 11px;border-radius:20px;background:var(--x-nav);display:flex;justify-content:space-around;padding:9px 6px;color:var(--x-navmu)}
+.nv span{display:grid;justify-items:center;gap:2px;font-size:8.5px;font-weight:600}.nv span.on{color:var(--x-navon)}
+.nv b{width:17px;height:17px;border-radius:6px;border:2px solid currentColor;display:block}.nv span.on b{background:currentColor}
+.th{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;flex:none}
+.sg{display:flex;background:var(--x-tbg);border-radius:11px;padding:3px;gap:3px}
+.sg span{flex:1;text-align:center;padding:5px 0;border-radius:8px;font-weight:600;font-size:9.5px;color:var(--x-muted)}
+.sg span.on{background:var(--x-solid);color:var(--x-text);box-shadow:0 1px 3px rgb(0 0 0 / .12)}
+.ch{display:flex;gap:5px;flex-wrap:wrap}.ch span{border-radius:9px;padding:4px 8px;font-size:9.5px;font-weight:600;border:1px solid var(--x-line);white-space:nowrap}
+.ch .on{background:var(--x-accent);color:var(--x-on);border-color:transparent}
+.ch .off{background:var(--x-tbg);color:var(--x-muted);text-decoration:line-through}
+.fld{border:1px solid var(--x-line);background:var(--x-solid);border-radius:13px;padding:9px 11px;display:flex;justify-content:space-between;align-items:center}
+.fld small{display:block;color:var(--x-muted);font-size:8.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.otp{display:flex;gap:7px;justify-content:center}.otp b{width:34px;height:42px;border-radius:12px;display:grid;place-items:center;font-size:17px;font-family:var(--x-disp);background:var(--x-solid);border:1.5px solid var(--x-line)}
+.otp b.f{border-color:var(--x-accent)}
+.dm{position:absolute;inset:0;background:rgb(0 0 0 / .45)}
+.sh{position:absolute;left:0;right:0;bottom:0;background:var(--x-solid);border-radius:24px 24px 0 0;padding:9px 15px 15px;display:flex;flex-direction:column;gap:9px}
+.gb{width:34px;height:4px;border-radius:9px;background:var(--x-line);margin:0 auto 3px}
+.stp{display:flex;gap:8px;align-items:flex-start}.stp i{width:17px;height:17px;border-radius:50%;flex:none;display:grid;place-items:center;font-style:normal;font-size:8.5px;font-weight:700;background:var(--x-tbg)}
+.stp.on i{background:var(--x-accent);color:var(--x-on)}
+.pin{display:flex;gap:8px;justify-content:center}.pin b{width:9px;height:9px;border-radius:50%;background:var(--x-text)}.pin b.e{background:transparent;border:1.5px solid var(--x-muted)}
+.ky{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;text-align:center;font-weight:600;font-size:13.5px}.ky span{padding:5px 0}
+.bb{border-radius:15px 15px 15px 5px;background:var(--x-solid);padding:7px 9px;max-width:86%;border:1px solid var(--x-line)}
+.me{align-self:flex-end;border-radius:15px 15px 5px 15px;background:var(--x-accent);color:var(--x-on);padding:7px 9px;max-width:78%}
+.sy{align-self:center;font-size:9px;font-weight:700;border-radius:999px;padding:4px 10px;background:var(--x-heldbg);color:var(--x-held)}
+.cp{margin:0 11px 11px;display:flex;gap:7px;align-items:center}.cp span{flex:1;border-radius:999px;padding:8px 11px;background:var(--x-solid);border:1px solid var(--x-line);color:var(--x-muted)}
+.cp b{width:30px;height:30px;border-radius:50%;background:var(--x-accent);display:block}
+.mn{font-variant-numeric:tabular-nums}
+.big{font-size:26px;font-weight:700;line-height:1}
+.hd{display:flex;align-items:center;gap:8px;padding:3px 13px 7px}
+.li{display:flex;gap:9px;align-items:center;padding:7px 0;border-bottom:1px solid var(--x-line)}.li:last-child{border-bottom:0}
+.ok{background:#DDF3E6;color:#0B5E3B}.rl{background:#ECEEF1;color:#4A5260}.hl{background:var(--x-heldbg);color:var(--x-held)}
+</style>
+</head>
+<body>
+<div class="topbar"><div>
+  <b>Jugaad Street</b>
+  <nav><a href="#types">Bucket types</a><a href="#journeys">Journeys</a><a href="#screens">Screens</a><a href="#claim">How a claim works</a><a href="#states">Lifecycles</a><a href="#data">Data model</a><a href="#nexconn">Nexconn</a></nav>
+  <div class="dirs" role="group" aria-label="Design direction">
+    <button type="button" data-d="0">1 Night Market</button><button type="button" data-d="1">2 Fresh Counter</button><button type="button" data-d="2" class="on">3 Clay Pop</button><button type="button" data-d="3">4 Mango Glass</button>
+  </div>
+</div></div>
+
+<main>
+<section>
+  <h1>Wholesale prices for your whole street</h1>
+  <p class="lede">Jugaad Street is a bulk-buying marketplace for local communities. Neighbours bucket their orders inside their community chat to unlock wholesale prices from local wholesalers, farmers, fishermen and service providers. Members either hold money with UPI, paid only when the bucket fills, or simply book their share and pay when they meet at the market. A full bucket becomes an order with every member's details. Use the switcher at the top to see every screen in each design direction.</p>
+</section>
+
+<section id="types">
+  <h2>Four ways to bucket</h2>
+  <div class="types">
+    <div class="type"><em>Split</em><b>One big item, different parts</b><span>A whole seer fish, a Bakrid goat in 7 shares, a jackfruit. Each neighbour claims the part they want on a tappable picture.</span></div>
+    <div class="type"><em>Bulk</em><b>The more we buy, the cheaper</b><span>Rice, atta, oil, mango boxes, dry fruits. Price tiers unlock as the group's total grows, and everyone pays the final tier.</span></div>
+    <div class="type"><em>Service</em><b>Book together, pay less per flat</b><span>Pest control, tank cleaning, AC servicing, deep cleaning. The per-flat price drops as more flats join.</span></div>
+    <div class="type"><em>Market trip</em><b>Book your share, buy together</b><span>Go to the fish market or mandi together at a set time, or send one runner with everyone's list. Book your half now, pay at the market.</span></div>
+  </div>
+</section>
+
+<section id="journeys">
+  <h2>Journeys</h2>
+  <p class="lede">Three people use the app. Dotted lines show where one person's action reaches another.</p>
+  <div class="panel"><pre class="mermaid">
+flowchart TB
+  subgraph N["Neighbour"]
+    direction TB
+    a0["Start a bucket<br/>(anyone)"] --> a2
+    a1["Join community<br/>(society, street, office, hostel)"] --> a2["Street feed"]
+    a2 --> a3{"Bucket type"}
+    a3 -->|Split| a4["Claim a part"]
+    a3 -->|Bulk| a5["Choose quantity"]
+    a3 -->|Service| a6["Pick flat size and slot"]
+    a3 -->|Market trip| a7["Add items to the list"]
+    a4 --> a8{"How to pay"}
+    a5 --> a8
+    a6 --> a8
+    a7 --> a8
+    a8 -->|"Hold with UPI"| a9{"Cutoff"}
+    a8 -->|"Book only"| m1["Meet at the market<br/>buy together, pay there"]
+    m1 --> a12
+    a9 -->|"Filled or tier reached"| o1["Bucket becomes an order<br/>every member's details saved"]
+    o1 --> a10["Pay the final price"]
+    a10 --> a11["Collect at the gate with OTP"]
+    a11 --> a12["Rate and see savings"]
+    a9 -->|"Not filled"| a13["Hold released automatically"]
+  end
+  subgraph V["Vendor"]
+    direction TB
+    v1["Post an offer to communities"] --> v2["Watch buckets fill"]
+    v2 --> v3["Get the packing list"] --> v4["One delivery to the gate"]
+    v4 --> v5["Enter buyers' OTPs"] --> v6["Payout released"]
+  end
+  subgraph C["Community admin"]
+    direction TB
+    c1["Invite neighbours"] --> c2["Approve vendors"] --> c3["Nudge for leftovers"] --> c4["Earn credits"]
+  end
+  v1 -.-> a2
+  c2 -.-> v1
+  c3 -.-> a2
+  a10 -.-> v3
+  a11 -.-> v5
+</pre></div>
+</section>
+
+<section id="screens">
+  <h2>Screens</h2>
+  <p class="lede">Numbered in the order a person meets them. Every price is realistic for Chennai in 2026.</p>
+  <h3>Get started</h3><div class="screens" data-g="start"></div>
+  <h3>Start a bucket (anyone)</h3><div class="screens" data-g="create"></div>
+  <h3>Neighbour</h3><div class="screens" data-g="neighbour"></div>
+  <h3>Vendor and admin</h3><div class="screens" data-g="vendor"></div>
+</section>
+
+<section id="claim">
+  <h2>How a claim works</h2>
+  <p class="lede">Ananya joins the basmati bucket with 10 kg. Her money is held, every neighbour's card updates live through Nexconn, and at the cutoff she pays the lower price the group unlocked.</p>
+  <div class="panel"><pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant A as Ananya's app
+  participant S as Jugaad server
+  participant U as UPI Reserve (sandbox)
+  participant N as Nexconn
+  participant O as Neighbours' apps
+  A->>S: Join basmati bucket, 10 kg
+  S->>U: Create hold ₹960, expires at cutoff
+  U-->>A: UPI PIN sheet
+  A->>U: Enter PIN
+  U-->>S: ₹960 blocked
+  S->>N: Update bucket card metadata (82 kg, 9 people)
+  S->>N: Bot message "Ananya joined. 18 kg to unlock ₹88/kg"
+  N-->>O: Card redraws live
+  N-->>A: Card redraws live
+  Note over S: Cutoff Saturday 8 pm, 104 kg reached
+  S->>U: Take ₹880, release the other ₹80
+  S->>N: Locked card in Street, pickup OTP to Ananya
+  S->>N: Create bucket group: buyers + vendor
+</pre></div>
+</section>
+
+<section id="states">
+  <h2>Lifecycles</h2>
+  <div class="two">
+    <div class="panel"><h3 style="margin:0 0 10px">Bucket</h3><pre class="mermaid">
+stateDiagram-v2
+  [*] --> Draft
+  Draft --> Live: vendor posts
+  Live --> Ordered: filled or tier reached
+  Ordered --> Locked: holds captured
+  Live --> Expired: cutoff, not filled
+  Live --> Cancelled: creator or admin
+  Live --> MarketDay: book-only bucket full
+  MarketDay --> Completed: members check in and buy
+  Locked --> Delivering: packed
+  Delivering --> Completed: all OTPs entered
+  Expired --> [*]
+  Cancelled --> [*]
+  Completed --> [*]
+</pre></div>
+    <div class="panel"><h3 style="margin:0 0 10px">Payment hold</h3><pre class="mermaid">
+stateDiagram-v2
+  [*] --> Created
+  Created --> Held: UPI PIN
+  Held --> Captured: bucket locked, final price
+  Held --> Released: bucket expired or member leaves
+  Captured --> Settled: OTP handover, vendor paid
+  Released --> [*]
+  Settled --> [*]
+</pre></div>
+  </div>
+</section>
+
+<section id="data">
+  <h2>Data model</h2>
+  <p class="lede">What the server stores. A bucket can be created by any member, optionally with a vendor. Each share is either backed by a UPI hold or booked to pay at the market. When the bucket fills, an order is created and every share is copied into an order line with the member's details. Chat itself (messages, members, history) lives in Nexconn; the server keeps the money and the bucket rules, and links each bucket to its Nexconn card and channel.</p>
+  <div class="panel"><pre class="mermaid">
+erDiagram
+  USER ||--o{ MEMBERSHIP : has
+  COMMUNITY ||--o{ MEMBERSHIP : has
+  USER ||--o| VENDOR : "can be"
+  COMMUNITY ||--o{ BUCKET : hosts
+  USER ||--o{ BUCKET : creates
+  VENDOR |o--o{ BUCKET : supplies
+  BUCKET ||--o{ BUCKET_UNIT : "split into"
+  BUCKET ||--o{ PRICE_TIER : "priced by"
+  BUCKET ||--o{ SHARE : receives
+  USER ||--o{ SHARE : books
+  SHARE |o--o| PAYMENT_HOLD : "backed by"
+  BUCKET ||--o| ORDER : "becomes"
+  ORDER ||--o{ ORDER_LINE : lists
+  SHARE ||--|| ORDER_LINE : "copied to"
+  ORDER ||--o| PAYOUT : settles
+  BUCKET ||--o{ RATING : gets
+  USER {
+    string id PK
+    string phone
+    string name
+    string avatarUrl
+    string nexconnUserId
+  }
+  COMMUNITY {
+    string id PK
+    string name
+    string kind "society street office hostel"
+    string city
+    string inviteCode
+    string streetChannelId "Nexconn group"
+  }
+  MEMBERSHIP {
+    string userId FK
+    string communityId FK
+    string unit "flat B-1204"
+    string role "member admin"
+  }
+  VENDOR {
+    string id PK
+    string userId FK
+    string businessName
+    string category
+    string payoutVpa
+    float rating
+  }
+  BUCKET {
+    string id PK
+    string communityId FK
+    string createdBy FK "any member"
+    string vendorId FK "optional"
+    string type "split bulk service trip"
+    string title
+    float totalQty
+    string unitLabel "kg half cut flat"
+    string settleMode "hold or at_market"
+    string meetPlace "Kasimedu Gate 3"
+    datetime meetAt
+    datetime cutoffAt
+    string status
+    string cardMessageId "Nexconn message"
+    string bucketChannelId "Nexconn group"
+  }
+  BUCKET_UNIT {
+    string id PK
+    string bucketId FK
+    string label "Steak 3 or Half A"
+    int grams
+    int price
+    string shareId FK
+  }
+  PRICE_TIER {
+    string bucketId FK
+    int minQty
+    int unitPrice
+  }
+  SHARE {
+    string id PK
+    string bucketId FK
+    string userId FK
+    float qty
+    string items "list for a market trip"
+    string options "cut style, slot"
+    string payMode "hold or at_market"
+    int estAmount
+    string status "booked held checked_in collected left"
+  }
+  PAYMENT_HOLD {
+    string id PK
+    string shareId FK
+    string vpa
+    int amount
+    string mandateRef
+    datetime expiresAt
+    string status "held captured released"
+  }
+  ORDER {
+    string id PK "JS-2041"
+    string bucketId FK
+    int total
+    int heldTotal
+    int atPickupTotal
+    datetime createdAt
+    string status "created sent packed delivered"
+  }
+  ORDER_LINE {
+    string orderId FK
+    string userId FK
+    string name
+    string unit
+    float qty
+    int amount
+    string payMode
+    string otp
+    string paymentStatus
+  }
+  PAYOUT {
+    string orderId FK
+    int gross
+    int platformFee
+    int adminShare
+    string status
+  }
+  RATING {
+    string bucketId FK
+    string userId FK
+    int stars
+    string text
+  }
+</pre></div>
+</section>
+
+<section id="nexconn">
+  <h2>Where Nexconn is used</h2>
+  <div class="panel"><table>
+    <thead><tr><th>App concept</th><th>Nexconn feature</th><th>Detail</th></tr></thead>
+    <tbody>
+      <tr><td>Community Street chat</td><td>Group channel</td><td>One per community, created by the server; members added when they join</td></tr>
+      <tr><td>Live bucket card</td><td>Custom message <code>js:bucket</code> + message metadata</td><td>Sent by the server bot with metadata on; every claim updates the metadata and all phones redraw</td></tr>
+      <tr><td>Claim, lock, pickup OTP</td><td>Custom messages <code>js:claim</code> <code>js:lock</code> <code>js:otp</code></td><td>Rendered as cards in the chat UI kit</td></tr>
+      <tr><td>Bucket chat after lock</td><td>Group channel</td><td>Buyers plus the vendor, for pickup time and questions</td></tr>
+      <tr><td>Ask the vendor</td><td>Direct channel</td><td>Text, photos and voice notes from the chat UI kit</td></tr>
+      <tr><td>Nudges and reminders</td><td>Server messages + mentions</td><td>"@Kiran 18 kg to unlock ₹88/kg"</td></tr>
+      <tr><td>Login</td><td>Access tokens</td><td>Issued by our server; the App Secret never ships in the app</td></tr>
+    </tbody>
+  </table></div>
+</section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+<script>
+const DIRS=[
+ {disp:'"Unbounded",sans-serif',body:'"Inter",sans-serif',t:{bg:"#0C0E11",card:"#16191E",solid:"#16191E",line:"#262A31",text:"#F3F1EC",muted:"#8C9099",accent:"#FFB547",on:"#1A1205",tbg:"#23272E",nav:"#16191E",navon:"#FFB547",navmu:"#6B707A",shadow:"none",livebg:"#2A2113",live:"#FFB547",heldbg:"#2A2113",held:"#FFC871",fishTop:"#3E5468",fishBot:"#B8C7D3",claimed:"#5B6372",sep:"#0C0E11"}},
+ {disp:'"Manrope",sans-serif',body:'"Manrope",sans-serif',t:{bg:"#FFFFFF",card:"#FFFFFF",solid:"#FFFFFF",line:"#ECEDF0",text:"#101114",muted:"#6E7380",accent:"#FF4D2E",on:"#FFFFFF",tbg:"#F2F3F5",nav:"#101114",navon:"#FFFFFF",navmu:"#7D818B",shadow:"0 10px 28px -14px rgba(16,17,20,.25)",livebg:"#FFEDE8",live:"#E5381A",heldbg:"#FFF3D6",held:"#8A5A00",fishTop:"#4F6C86",fishBot:"#D6E2EA",claimed:"#C9CDD4",sep:"#FFFFFF"}},
+ {disp:'"Bricolage Grotesque",sans-serif',body:'"DM Sans",sans-serif',t:{bg:"#F3EFFF",card:"#FFFFFF",solid:"#FFFFFF",line:"#E6E0FA",text:"#1D1533",muted:"#6F6788",accent:"#6B4BFF",on:"#FFFFFF",tbg:"#ECE6FF",nav:"#FFFFFF",navon:"#6B4BFF",navmu:"#A39CBB",shadow:"0 14px 30px -18px rgba(76,52,170,.35)",livebg:"#FFE7DA",live:"#C2410C",heldbg:"#FFF1C9",held:"#8A5A00",fishTop:"#7A8CC9",fishBot:"#DCE3FF",claimed:"#C9BEF5",sep:"#FFFFFF"}},
+ {disp:'"Sora",sans-serif',body:'"Inter",sans-serif',t:{bg:"linear-gradient(165deg,#FFE6C7 0%,#FFD0B0 45%,#FFB9A6 100%)",card:"rgba(255,255,255,.55)",solid:"#FFF7F1",line:"rgba(255,255,255,.75)",text:"#2B1531",muted:"#7A5A6A",accent:"#3B1E54",on:"#FFE6C7",tbg:"rgba(59,30,84,.10)",nav:"rgba(255,255,255,.6)",navon:"#3B1E54",navmu:"#9C7C88",shadow:"0 12px 30px -18px rgba(120,50,40,.35)",livebg:"rgba(59,30,84,.10)",live:"#3B1E54",heldbg:"#3B1E54",held:"#FFE6C7",fishTop:"#6E7FA0",fishBot:"#E9EEF7",claimed:"#B89AA8",sep:"#FFFFFF"}},
+];
+let T=DIRS[2].t;
+const ST=`<div class="st"><span>9:41</span><span>●●● ▮</span></div>`;
+const NAV=(on)=>`<div class="nv">${["Street","Buckets","Chats","Wallet"].map((x,i)=>`<span class="${i===on?'on':''}"><b></b>${x}</span>`).join("")}</div>`;
+const AV=(l,c)=>`<span class="av" style="background:${c}">${l}</span>`;
+const STACK=`<div class="sk">${AV("S","#E0703A")}${AV("R","#3B82F6")}${AV("P","#14B8A6")}${AV("M","#A855F7")}</div>`;
+const ICON={
+ fish:["#DCE6F5",`<path d="M4 20 C10 11 22 10 29 15 L36 10 C34 16 34 24 36 30 L29 25 C22 30 10 29 4 20Z" fill="#6E86B8"/><circle cx="10" cy="18" r="1.6" fill="#fff"/>`],
+ rice:["#F4E9D6",`<path d="M10 14 L30 14 L33 34 Q20 38 7 34Z" fill="#C8A46A"/><rect x="12" y="9" width="16" height="6" rx="2" fill="#B08D52"/>`],
+ mango:["#FFE7B0",`<ellipse cx="20" cy="22" rx="10" ry="12" fill="#FFB020"/><path d="M20 10 C24 4 30 6 30 6 C28 12 22 12 20 10Z" fill="#3BA55C"/>`],
+ pest:["#DDF6E9",`<rect x="13" y="12" width="12" height="22" rx="4" fill="#2BB673"/><rect x="16" y="7" width="6" height="6" rx="1" fill="#2BB673"/><path d="M25 10 L32 8" stroke="#2BB673" stroke-width="2.5"/>`],
+ truck:["#E3E9FF",`<rect x="5" y="13" width="19" height="14" rx="2" fill="#4C6FFF"/><path d="M24 17 H31 L35 22 V27 H24Z" fill="#7C95FF"/><circle cx="11" cy="29" r="3" fill="#1D1533"/><circle cx="29" cy="29" r="3" fill="#1D1533"/>`],
+ goat:["#F1E8DF",`<ellipse cx="20" cy="22" rx="11" ry="8" fill="#9C7A5B"/><circle cx="31" cy="15" r="5" fill="#9C7A5B"/><path d="M12 29 V35 M17 29 V35 M24 29 V35 M28 29 V35" stroke="#6B4F38" stroke-width="2"/>`],
+};
+const IC=(k,s=36)=>`<div class="th" style="width:${s}px;height:${s}px;background:${ICON[k][0]}"><svg viewBox="0 0 40 40" width="${s*.7}" height="${s*.7}">${ICON[k][1]}</svg></div>`;
+const cutX=[14,74,104,134,164,194,224,254,292];
+const owners=[["S","#E0703A"],["R","#3B82F6"],"ME",["P","#14B8A6"],["M","#A855F7"],null,["K","#EAB308"],null];
+let fid=0;
+function FISH(){const id="f"+(fid++);let o="",l="";
+  for(let i=0;i<8;i++){const x=cutX[i],w=cutX[i+1]-x,ow=owners[i],cx=x+w/2;
+    if(i>0)o+=`<line x1="${x}" y1="0" x2="${x}" y2="120" stroke="${T.sep}" stroke-width="2" ${ow?'':'stroke-dasharray="4 3"'}/>`;
+    if(ow==="ME"){o+=`<rect x="${x}" width="${w}" height="120" fill="${T.accent}" opacity=".9"/>`;l+=`<text x="${cx}" y="66" text-anchor="middle" font-size="13" font-weight="800" fill="${T.on}">✓</text>`}
+    else if(ow){o+=`<rect x="${x}" width="${w}" height="120" fill="${T.claimed}" opacity=".55"/>`;l+=`<circle cx="${cx}" cy="61" r="9" fill="${ow[1]}" stroke="#fff" stroke-width="2"/><text x="${cx}" y="65" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">${ow[0]}</text>`}
+    else l+=`<text x="${cx}" y="66" text-anchor="middle" font-size="16" font-weight="700" fill="${T.text}" opacity=".5">+</text>`;}
+  return `<svg viewBox="0 0 300 120" width="100%"><defs><linearGradient id="g${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${T.fishTop}"/><stop offset=".55" stop-color="${T.fishBot}"/><stop offset="1" stop-color="#fff"/></linearGradient><clipPath id="c${id}"><path d="M8 62 C34 22 110 12 186 16 C226 19 248 32 258 46 L292 18 C284 40 284 82 292 104 L258 76 C248 90 226 103 186 106 C110 111 34 102 8 62Z"/></clipPath></defs><path d="M120 16 L150 2 L176 16Z M130 106 L150 118 L168 106Z" fill="${T.fishTop}" opacity=".8"/><g clip-path="url(#c${id})"><rect width="300" height="120" fill="url(#g${id})"/>${o}</g><circle cx="36" cy="52" r="6" fill="#fff"/><circle cx="37" cy="52" r="3.2" fill="#111"/>${l}</svg>`}
+function TIERS(cur,max,marks){ // marks: [[qty,label]]
+  return `<div style="position:relative;padding-top:16px"><div class="br" style="height:9px"><i style="width:${cur/max*100}%"></i></div>${marks.map(([q,l])=>`<div style="position:absolute;left:${q/max*100}%;top:0;transform:translateX(-50%);font-size:8.5px;font-weight:700;white-space:nowrap" class="${q<=cur?'':'mu'}">${l}</div><div style="position:absolute;left:${q/max*100}%;top:14px;width:2px;height:13px;background:${T.text};opacity:.35"></div>`).join("")}</div>`}
+const KEYS=`<div class="ky">${[1,2,3,4,5,6,7,8,9,"",0,"⌫"].map(k=>`<span>${k}</span>`).join("")}</div>`;
+
+const S={start:[],create:[],neighbour:[],vendor:[]};
+const add=(g,title,note,fn)=>S[g].push({title,note,fn});
+
+add("start","Welcome","What the app does, in one line",()=>`${ST}<div class="pd" style="justify-content:space-between;padding-bottom:16px">
+ <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">${["fish","rice","mango","pest"].map((k,i)=>`<div class="cd" style="padding:12px;display:grid;gap:6px;transform:rotate(${[-3,2,2,-2][i]}deg)">${IC(k,40)}<b class="mn" style="font-size:10px">${["−34%","−20%","−25%","−29%"][i]}</b></div>`).join("")}</div>
+ <div style="display:grid;gap:8px"><div class="ds" style="font-size:24px;font-weight:700;line-height:1.05">Wholesale prices for your whole street</div><div class="mu">Buy in bulk with neighbours. Pay only when the deal goes through.</div></div>
+ <div style="display:grid;gap:7px"><div class="cta">Get started</div><div class="gh">I sell to communities</div></div></div>`);
+add("start","Phone login","OTP sign-in; the server issues the Nexconn token",()=>`${ST}<div class="pd">
+ <div class="mu">‹</div><div class="ds" style="font-size:20px;font-weight:700">Enter the code we sent</div><div class="mu">+91 98410 22417 · Change</div>
+ <div class="otp" style="margin:10px 0"><b class="f">4</b><b class="f">8</b><b class="f">2</b><b>7</b></div>
+ <div class="mu" style="text-align:center">Resend in 0:24</div>
+ <div style="margin-top:auto" class="cta">Verify</div>${KEYS}</div>`);
+add("start","Join your community","Search, invite code, or start one",()=>`${ST}<div class="pd">
+ <div class="ds" style="font-size:20px;font-weight:700">Find your community</div>
+ <div class="fld"><span class="mu">⌕ Sea Breeze</span></div>
+ <div class="cd" style="padding:4px 11px">
+  ${[["Sea Breeze Towers","Society · OMR, Chennai · 412 flats","46 on Jugaad Street",1],["Sea Breeze Residency","Society · Thoraipakkam · 180 flats","12 on Jugaad Street",0],["Sea Breeze Office Park","Office · Perungudi","Starting soon",0]].map(([a,b,c,on])=>`<div class="li"><div style="flex:1;min-width:0"><b>${a}</b><div class="mu">${b}</div><div style="font-size:9px;font-weight:700;color:${T.accent}">${c}</div></div><span class="pl ${on?'':'tg'}" style="${on?`background:${T.accent};color:${T.on}`:''}">${on?'Join':'View'}</span></div>`).join("")}
+ </div>
+ <div class="fld"><div><small>Your flat</small><b>B-1204</b></div></div>
+ <div class="gh">Have an invite code?</div><div class="gh">Start a new community</div></div>`);
+
+add("create","Create a bucket","Anyone sets the total, the shares and how people pay",()=>`${ST}<div class="pd">
+ <div class="rw sb"><span class="mu">✕</span><b>New bucket</b><span class="mu">Step 1 of 2</span></div>
+ <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">${[["Split","fish"],["Bulk","rice"],["Service","pest"],["Market trip","truck"]].map(([a,k],i)=>`<div class="cd rw" style="padding:7px;gap:7px;${i===3?`outline:2px solid ${T.accent}`:''}">${IC(k,26)}<b>${a}</b></div>`).join("")}</div>
+ <div class="fld"><div><small>What are we buying</small><b>Whole seer from Kasimedu</b></div></div>
+ <div class="fld"><div><small>Total</small><b>1 fish, about 5 kg</b></div><div><small>Shares</small><b>2 halves</b></div></div>
+ <div class="mu">How do members pay?</div>
+ <div class="sg"><span>Hold with UPI</span><span class="on">Pay at the market</span></div>
+ <div class="fld"><div><small>Meet at</small><b>Kasimedu, Gate 3 · Sun 6:00 am</b></div></div>
+ <div class="mu">Share with</div><div class="ch"><span class="on">Sea Breeze Street</span><span>Block B only</span><span>Invite link</span></div>
+ <div style="margin-top:auto" class="cta">Create bucket</div></div>`);
+add("create","Book your half, meet at the market","No prepayment: book, show up, buy together",()=>`${ST}<div class="pd">
+ <div class="rw sb"><span class="mu">‹ Back</span><span class="pl ok">Booked</span></div>
+ <div class="ds" style="font-size:18px;font-weight:700;line-height:1.1">You booked half a seer</div><div class="mu">Ravi's bucket · about 2.5 kg · pay at the market</div>
+ <div class="cd" style="padding:0;overflow:hidden"><svg viewBox="0 0 220 110" width="100%" style="display:block;background:${T.tbg}"><path d="M0 70 H220 M70 0 V110 M150 0 L120 110" stroke="${T.solid}" stroke-width="9"/><path d="M0 70 H220 M70 0 V110 M150 0 L120 110" stroke="${T.line}" stroke-width="1"/><rect x="160" y="10" width="54" height="40" rx="6" fill="${T.claimed}" opacity=".6"/><text x="187" y="34" text-anchor="middle" font-size="8" font-weight="700" fill="${T.text}">Auction hall</text><path d="M100 46 C100 34 116 34 116 46 C116 56 108 62 108 66 C108 62 100 56 100 46Z" fill="${T.accent}"/><circle cx="108" cy="46" r="3.5" fill="#fff"/><text x="108" y="82" text-anchor="middle" font-size="8" font-weight="700" fill="${T.text}">Gate 3</text></svg>
+  <div style="padding:10px 11px;display:grid;gap:3px"><b>Kasimedu Fish Market, Gate 3</b><div class="mu">Sunday 6:00 am · auction starts 6:15</div></div></div>
+ <div class="cd" style="padding:10px 11px;display:grid;gap:6px"><div class="rw sb"><b>Who's coming</b><span class="mu">2 of 2 halves booked</span></div><div class="rw" style="gap:8px">${AV("R","#3B82F6")}<span style="flex:1">Ravi · organiser</span><span class="pl tg">On the way</span></div><div class="rw" style="gap:8px">${AV("A","#6B4BFF")}<span style="flex:1">You</span><span class="pl tg">Booked</span></div></div>
+ <div class="cd rw sb" style="padding:9px 11px"><span class="mu">Your share at ~₹950/kg</span><b class="mn">≈ ₹2,375</b></div>
+ <div style="margin-top:auto;display:grid;grid-template-columns:1fr 1fr;gap:7px"><div class="gh">Message</div><div class="cta">I'm here</div></div></div>`);
+add("create","Bucket full → order","Every member's details saved; sent to the vendor",()=>`${ST}<div class="pd">
+ <div class="rw sb"><span class="mu">‹ Buckets</span><span class="pl ok">Order JS-2041</span></div>
+ <div class="ds" style="font-size:18px;font-weight:700;line-height:1.1">Bucket full, order created</div><div class="mu">Basmati 1121 · 104 kg · ₹88/kg · 11 members</div>
+ <div class="cd" style="padding:2px 10px">${[["Ananya","B-1204","10 kg","₹880","Held","hl"],["Meera","A-303","15 kg","₹1,320","Held","hl"],["Ravi","C-801","5 kg","₹440","At pickup","tg"],["Kiran","B-402","20 kg","₹1,760","Held","hl"],["Priya","A-1101","10 kg","₹880","Held","hl"]].map(([a,b,c,d,e,f])=>`<div class="li"><div style="flex:1;min-width:0"><b>${a}</b> <span class="mu">${b}</span><div class="mu">${c}</div></div><div style="text-align:right"><b class="mn">${d}</b><div><span class="pl ${f}">${e}</span></div></div></div>`).join("")}<div class="li"><span class="mu" style="flex:1">+ 6 more members</span></div></div>
+ <div class="cd" style="padding:9px 11px;display:grid;gap:4px"><div class="rw sb"><span class="mu">Order total</span><b class="mn">₹9,152</b></div><div class="rw sb"><span class="mu">Held with UPI</span><span class="mn">₹7,920</span></div><div class="rw sb"><span class="mu">Pay at pickup</span><span class="mn">₹1,232</span></div></div>
+ <div style="margin-top:auto;display:grid;grid-template-columns:1fr 1fr;gap:7px"><div class="gh">Export list</div><div class="cta">Send to vendor</div></div></div>`);
+
+add("neighbour","Street home","Savings, live buckets of every type",()=>`${ST}<div class="pd">
+ <div class="rw sb"><div><div class="mu">Good morning, Ananya</div><div class="ds" style="font-size:16px;font-weight:700">Sea Breeze Towers</div></div><span class="av" style="width:28px;height:28px;font-size:11px;background:${T.accent};color:${T.on}">A</span></div>
+ <div class="cd rw sb" style="padding:11px"><div><div class="mu">Saved this month</div><div class="ds mn" style="font-size:20px;font-weight:700">₹2,840</div></div><svg viewBox="0 0 80 30" width="80"><path d="M0 26 L14 22 L28 23 L42 15 L56 13 L70 6 L80 4" fill="none" stroke="${T.accent}" stroke-width="2.5" stroke-linecap="round"/></svg></div>
+ <div class="ch"><span class="on">All</span><span>Fresh</span><span>Staples</span><span>Seasonal</span><span>Services</span><span>Market trip</span></div>
+ <div class="cd" style="padding:10px;display:grid;gap:6px"><div class="rw sb"><span class="pl lv">● Split · closes 42 min</span><span class="mu">Kasimedu</span></div>${FISH()}<div class="rw sb"><b class="ds" style="font-size:12.5px">Whole Seer · 5.2 kg</b><b>6/8</b></div><div class="br"><i style="width:75%"></i></div></div>
+ ${[["rice","Bulk","Basmati · 25 kg sacks","82 of 100 kg · ₹96 → ₹88"],["pest","Service","Pest control · whole tower","31 flats · ₹400 now"],["truck","Market trip","Koyambedu · Sat 5 am","186 of 300 kg booked"]].map(([k,ty,a,b])=>`<div class="rw">${IC(k)}<div style="flex:1;min-width:0"><b>${a}</b><div class="mu">${b}</div></div><span class="pl tg">${ty}</span></div>`).join("")}
+</div>${NAV(0)}`);
+add("neighbour","Split: pick your part","Tap an open cut, choose how it's cut",()=>`${ST}<div class="pd">
+ <div class="rw sb"><span class="mu">‹ Back</span><span class="pl lv">● 42:10 left</span></div>
+ <div class="ds" style="font-size:18px;font-weight:700;line-height:1.1">Whole Seer · 5.2 kg</div><div class="mu">Murugan, Kasimedu · landed 6:10 am · ₹950/kg</div>
+ <div class="cd" style="padding:9px">${FISH()}</div>
+ <div class="ch"><span class="off">Head</span><span class="off">S1</span><span class="on">S2 · yours</span><span class="off">S3</span><span class="off">S4</span><span>S5</span><span class="off">S6</span><span>Tail</span></div>
+ <div class="cd" style="padding:11px;display:grid;gap:8px"><div class="rw sb"><div><b class="ds" style="font-size:13px">Steak 5</b><div class="mu">about 650 g · middle cut</div></div><b class="ds mn" style="font-size:15px">₹700</b></div><div class="sg"><span class="on">Curry</span><span>Fry slices</span><span>Whole</span></div></div>
+ <div style="margin-top:auto" class="cta">Hold ₹700 with UPI</div></div>`);
+add("neighbour","Bulk: choose quantity","Tiers unlock as the group grows",()=>`${ST}<div class="pd">
+ <div class="rw sb"><span class="mu">‹ Back</span><span class="pl lv">● Sat 8 pm</span></div>
+ <div class="rw">${IC("rice",44)}<div><div class="ds" style="font-size:16px;font-weight:700;line-height:1.1">Basmati rice, 1121</div><div class="mu">Sri Balaji Traders, Koyambedu</div></div></div>
+ <div class="cd" style="padding:11px;display:grid;gap:8px">
+  <div class="rw sb"><b>Group total</b><b class="mn">82 kg</b></div>
+  ${TIERS(82,120,[[25,"₹96"],[100,"₹88"]])}
+  <div class="mu" style="margin-top:4px"><b style="color:${T.text}">18 kg more</b> unlocks ₹88/kg for all 9 of you · shop price ₹120/kg</div>
+ </div>
+ <div class="cd rw sb" style="padding:10px 11px"><div><b>Your quantity</b><div class="mu">in 5 kg bags</div></div><div class="rw" style="gap:12px"><span class="pl tg" style="font-size:13px">−</span><b class="ds" style="font-size:16px">10 kg</b><span class="pl tg" style="font-size:13px">+</span></div></div>
+ <div class="rw" style="gap:6px">${STACK}<span class="mu">Meera, Ravi and 7 others</span></div>
+ <div style="margin-top:auto;display:grid;gap:5px"><div class="cta">Hold ₹960 with UPI</div><div class="mu" style="text-align:center;font-size:9.5px">You pay ₹880 if the group reaches 100 kg</div></div></div>`);
+add("neighbour","Service: book together","Per-flat price drops as flats join",()=>`${ST}<div class="pd">
+ <div class="rw sb"><span class="mu">‹ Back</span><span class="pl lv">● 5 days left</span></div>
+ <div class="rw">${IC("pest",44)}<div><div class="ds" style="font-size:16px;font-weight:700;line-height:1.1">Pest control, whole tower</div><div class="mu">SafeHome Services · gel + spray</div></div></div>
+ <div class="cd" style="padding:11px"><div class="rw sb"><b>Price per flat</b><b class="mn">31 flats in</b></div>
+  <svg viewBox="0 0 200 70" width="100%" style="margin-top:6px"><path d="M10 12 H60 V30 H120 V48 H190" fill="none" stroke="${T.muted}" stroke-width="2" stroke-dasharray="3 3"/><path d="M10 12 H60 V30 H82" fill="none" stroke="${T.accent}" stroke-width="3"/><circle cx="82" cy="30" r="5" fill="${T.accent}"/>
+  <text x="12" y="8" font-size="8" fill="${T.muted}">₹480</text><text x="62" y="26" font-size="8" font-weight="700" fill="${T.text}">₹400</text><text x="122" y="44" font-size="8" fill="${T.muted}">₹340 at 50</text><text x="10" y="66" font-size="8" fill="${T.muted}">10 flats</text><text x="54" y="66" font-size="8" fill="${T.muted}">25</text><text x="114" y="66" font-size="8" fill="${T.muted}">50</text></svg></div>
+ <div class="mu">Your flat</div><div class="sg"><span>1 BHK</span><span class="on">2 BHK</span><span>3 BHK</span></div>
+ <div class="mu">Slot</div><div class="ch"><span>Sat 10 am</span><span class="on">Sat 2 pm</span><span>Sun 10 am</span></div>
+ <div style="margin-top:auto;display:grid;gap:5px"><div class="cta">Hold ₹400 with UPI</div><div class="mu" style="text-align:center;font-size:9.5px">Drops to ₹340 if 19 more flats join</div></div></div>`);
+add("neighbour","Market trip: shared list","Add items; transport split by weight",()=>`${ST}<div class="pd">
+ <div class="rw sb"><span class="mu">‹ Back</span><span class="pl lv">● Leaves Sat 5 am</span></div>
+ <div class="rw">${IC("truck",44)}<div><div class="ds" style="font-size:16px;font-weight:700;line-height:1.1">Koyambedu run</div><div class="mu">Arjun, B-702 · tempo 300 kg</div></div></div>
+ <div class="br"><i style="width:62%"></i></div><div class="rw sb mu"><span>186 kg booked</span><span>114 kg space left</span></div>
+ <div class="cd" style="padding:2px 11px">${[["Onion","10 kg","₹28/kg","+3"],["Tomato","5 kg","₹22/kg","+5"],["Banana, robusta","2 dozen","₹40/dz","+2"],["Coconut","10","₹24 each","you"]].map(([a,b,c,d])=>`<div class="li"><div style="flex:1"><b>${a}</b><div class="mu">${b} · ${c}</div></div><span class="pl ${d==='you'?'':'tg'}" style="${d==='you'?`background:${T.accent};color:${T.on}`:''}">${d}</span></div>`).join("")}</div>
+ <div class="fld"><span class="mu">+ Add an item</span></div>
+ <div class="cd rw sb" style="padding:9px 11px"><span class="mu">Your transport share</span><b class="mn">₹64</b></div>
+ <div style="margin-top:auto" class="cta">Hold ₹612 with UPI</div></div>`);
+add("neighbour","UPI hold","Money blocked in the bank, not paid",()=>`${ST}<div class="pd" style="opacity:.45"><div class="ds" style="font-size:16px;font-weight:700">Basmati rice, 1121</div>${TIERS(82,120,[[25,"₹96"],[100,"₹88"]])}</div><div class="dm"></div>
+ <div class="sh"><div class="gb"></div>
+  <div class="rw sb"><b class="ds" style="font-size:15px">Hold ₹960</b><span class="pl tg">UPI Reserve</span></div>
+  <div class="stp on"><i>1</i><div><b>Held in your bank now</b><div class="mu">Still your money. Nothing is paid yet.</div></div></div>
+  <div class="stp"><i>2</i><div><b>Paid at the final price</b><div class="mu">₹880 if 100 kg is reached, ₹960 if not</div></div></div>
+  <div class="stp"><i>3</i><div><b>Released if the bucket fails</b><div class="mu">Automatically at Sat 8 pm</div></div></div>
+  <div class="rw sb" style="border-top:1px solid ${T.line};padding-top:7px"><span class="mu">From</span><b>ananya@okaxis</b></div>
+  <div class="pin"><b></b><b></b><b></b><b class="e"></b><b class="e"></b><b class="e"></b></div>${KEYS}</div>`);
+add("neighbour","Hold confirmed","What happens next, and invite to fill faster",()=>`${ST}<div class="pd" style="gap:11px">
+ <div style="margin:14px auto 0;width:64px;height:64px;border-radius:50%;background:${T.accent};display:grid;place-items:center;color:${T.on};font-size:30px;font-weight:800">✓</div>
+ <div style="text-align:center"><div class="ds" style="font-size:19px;font-weight:700">₹960 held</div><div class="mu">Basmati bucket · 92 of 100 kg</div></div>
+ <div class="cd" style="padding:12px;display:grid;gap:9px">
+  <div class="stp on"><i>✓</i><div><b>Held in your bank</b><div class="mu">Just now</div></div></div>
+  <div class="stp"><i>2</i><div><b>Bucket closes</b><div class="mu">Sat 8 pm · 8 kg to ₹88/kg</div></div></div>
+  <div class="stp"><i>3</i><div><b>Delivered to Gate 2</b><div class="mu">Sun 10–11 am · show your OTP</div></div></div>
+ </div>
+ <div class="cd" style="padding:11px;display:grid;gap:7px"><b>8 kg to go</b><div class="mu">Share with neighbours so everyone pays ₹88/kg</div><div class="gh">Share to WhatsApp</div></div>
+ <div style="margin-top:auto" class="cta">Back to Street</div></div>`);
+add("neighbour","Street chat","Live cards, vendor voice notes, bot nudges",()=>`${ST}
+ <div class="hd" style="border-bottom:1px solid ${T.line}"><span class="mu">‹</span><div class="th" style="width:28px;height:28px;border-radius:9px;background:${T.accent};color:${T.on};font-weight:800;font-size:10px">SB</div><div><b>Sea Breeze Street</b><div class="mu" style="font-size:9px">46 neighbours · Murugan typing…</div></div></div>
+ <div class="pd" style="gap:7px">
+  <div class="bb"><b style="font-size:9px;color:${T.accent==='#3B1E54'?T.text:T.accent}">Murugan · vendor</b><div class="rw" style="gap:6px;margin-top:3px"><span class="pl tg">▶ 0:14</span><svg viewBox="0 0 60 14" width="60"><path d="M0 7h2M4 3v8M8 5v4M12 1v12M16 4v6M20 2v10M24 5v4M28 3v8M32 6v2M36 2v10M40 4v6M44 6v2M48 3v8M52 5v4M56 6v2" stroke="${T.muted}" stroke-width="2"/></svg></div></div>
+  <div class="cd" style="padding:9px;display:grid;gap:6px;border-radius:17px"><div class="rw sb"><b class="ds" style="font-size:11.5px">Basmati · 92 of 100 kg</b><span class="pl lv">Sat 8 pm</span></div>${TIERS(92,120,[[25,"₹96"],[100,"₹88"]])}<div class="rw sb" style="margin-top:3px"><span class="mu">10 neighbours in</span><b>Join ›</b></div></div>
+  <div class="sy">Ananya held 10 kg · ₹960</div>
+  <div class="me">Joined! 8 kg more and we all get ₹88 🙌</div>
+  <div class="bb"><b style="font-size:9px">Jugaad bot</b><div>@Kiran you bought 10 kg last month. 8 kg left to unlock ₹88/kg for everyone.</div></div>
+ </div><div class="cp"><span>Message the street</span><b></b></div>`);
+add("neighbour","Bucket locked + pickup","Final price, savings and OTP for the gate",()=>`${ST}<div class="pd">
+ <div class="rw sb"><span class="mu">‹ Orders</span><span class="pl ok">Locked</span></div>
+ <div class="ds" style="font-size:18px;font-weight:700;line-height:1.1">You got ₹88/kg</div><div class="mu">104 kg reached · 11 neighbours</div>
+ <div class="cd" style="padding:11px;display:grid;gap:6px">
+  <div class="rw sb"><span class="mu">Held</span><span class="mn">₹960</span></div>
+  <div class="rw sb"><span class="mu">Paid</span><b class="mn">₹880</b></div>
+  <div class="rw sb"><span class="mu">Released to you</span><span class="mn">₹80</span></div>
+  <div class="rw sb" style="border-top:1px solid ${T.line};padding-top:6px"><b>Saved vs shop price</b><b class="mn" style="color:#0FA968">₹320</b></div></div>
+ <div class="cd" style="padding:12px;display:grid;gap:8px;text-align:center"><div class="mu">Show this at Gate 2 · Sun 10–11 am</div><div class="otp"><b class="f">5</b><b class="f">1</b><b class="f">9</b><b class="f">3</b></div></div>
+ <div class="cd" style="padding:10px 12px;display:grid;gap:7px"><div class="stp on"><i>✓</i><b>Packed by Sri Balaji</b></div><div class="stp"><i>2</i><span>Arriving at Gate 2</span></div><div class="stp"><i>3</i><span>Collected</span></div></div>
+ <div class="gh">Chat with buyers and vendor</div></div>`);
+add("neighbour","Wallet","Held, paid, released and savings",()=>`${ST}<div class="pd">
+ <div class="ds" style="font-size:20px;font-weight:700">Wallet</div>
+ <div class="cd" style="padding:12px;display:grid;gap:3px;background:${T.accent};color:${T.on};border:0"><span style="opacity:.8">Saved with neighbours, 2026</span><div class="ds mn big">₹14,960</div><span style="opacity:.8">across 23 buckets</span></div>
+ <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="cd" style="padding:10px"><div class="mu">Held now</div><b class="ds mn" style="font-size:15px">₹1,660</b><div class="mu">2 buckets</div></div><div class="cd" style="padding:10px"><div class="mu">Paid in Nov</div><b class="ds mn" style="font-size:15px">₹6,420</b><div class="mu">9 buckets</div></div></div>
+ <div class="cd" style="padding:2px 11px">${[["Basmati, 10 kg","Today","₹960","Held","hl"],["Steak 2, seer","Today","₹700","Held","hl"],["Pest control","Nov 9","₹400","Paid","ok"],["Alphonso, 1 dozen","Nov 3","₹620","Released","rl"]].map(([a,b,c,d,e])=>`<div class="li"><div style="flex:1"><b>${a}</b><div class="mu">${b}</div></div><div style="text-align:right"><b class="mn">${c}</b><div><span class="pl ${e}">${d}</span></div></div></div>`).join("")}</div>
+</div>${NAV(3)}`);
+
+add("vendor","Vendor: post an offer","Pick a bucket type, set tiers, choose communities",()=>`${ST}<div class="pd">
+ <div class="ds" style="font-size:18px;font-weight:700">New offer</div>
+ <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">${[["Split","fish"],["Bulk","rice"],["Service","pest"],["Market trip","truck"]].map(([a,k],i)=>`<div class="cd rw" style="padding:7px;gap:7px;${i===1?`outline:2px solid ${T.accent}`:''}">${IC(k,26)}<b>${a}</b></div>`).join("")}</div>
+ <div class="fld"><div><small>Item</small><b>Basmati rice, 1121 · 5 kg bags</b></div></div>
+ <div class="cd" style="padding:4px 11px"><div class="li"><span class="mu" style="flex:1">From 25 kg</span><b class="mn">₹96/kg</b></div><div class="li"><span class="mu" style="flex:1">From 100 kg</span><b class="mn">₹88/kg</b></div><div class="li"><span style="flex:1;color:${T.accent};font-weight:700">+ Add tier</span></div></div>
+ <div class="fld"><div><small>Cutoff</small><b>Sat, 8:00 pm</b></div><div><small>Delivery</small><b>Sun 10 am</b></div></div>
+ <div class="mu">Offer to</div><div class="ch"><span class="on">Sea Breeze Towers · 412</span><span class="on">Palm Grove · 260</span><span>+ More</span></div>
+ <div style="margin-top:auto" class="cta">Post to 2 communities</div></div>`);
+add("vendor","Vendor: today","Live buckets, held demand, packing list",()=>`${ST}<div class="pd">
+ <div class="rw sb"><div><div class="mu">Sri Balaji Traders</div><div class="ds" style="font-size:16px;font-weight:700">Today</div></div><span class="pl ok">3 live</span></div>
+ <div class="cd" style="padding:11px"><div class="mu">Demand held for you</div><div class="ds mn" style="font-size:20px;font-weight:700">₹18,400</div><div class="mu">from 34 households in 2 communities</div></div>
+ ${[["Sea Breeze · Basmati","104 kg · locked","100","ok","Locked"],["Palm Grove · Basmati","61 kg","61","hl","Live"],["Sea Breeze · Toor dal","38 of 50 kg","76","hl","Live"]].map(([a,b,w,c,d])=>`<div class="cd" style="padding:9px 11px;display:grid;gap:5px"><div class="rw sb"><b>${a}</b><span class="pl ${c}">${d}</span></div><div class="br"><i style="width:${w}%"></i></div><div class="mu">${b}</div></div>`).join("")}
+ <b>Packing list · Sea Breeze</b>
+ <div class="cd" style="padding:2px 11px">${[["B-1204","Ananya","10 kg"],["A-303","Meera","15 kg"],["C-801","Ravi","5 kg"]].map(([a,b,c])=>`<div class="li"><b style="width:44px">${a}</b><span style="flex:1">${b}</span><b>${c}</b></div>`).join("")}</div>
+</div>`);
+add("vendor","Vendor: handover at the gate","Enter each buyer's OTP to release payment",()=>`${ST}<div class="pd">
+ <div class="rw sb"><span class="mu">‹</span><span class="pl lv">Gate 2 · Sea Breeze</span></div>
+ <div class="ds" style="font-size:18px;font-weight:700">Hand over and enter OTP</div>
+ <div class="br"><i style="width:64%"></i></div><div class="rw sb mu"><span>7 of 11 collected</span><span>₹6,160 released</span></div>
+ <div class="cd" style="padding:10px;display:grid;gap:8px;text-align:center"><b>B-1204 · Ananya · 10 kg</b><div class="otp"><b class="f">5</b><b class="f">1</b><b class="f">9</b><b>·</b></div></div>
+ ${KEYS}
+ <div style="margin-top:auto" class="cta">Confirm handover</div></div>`);
+add("vendor","Admin: community","Approve vendors, nudge, see what the street saved",()=>`${ST}<div class="pd">
+ <div class="rw sb"><div><div class="mu">Admin · Priya, A-1101</div><div class="ds" style="font-size:16px;font-weight:700">Sea Breeze Towers</div></div><span class="pl tg">46 / 412</span></div>
+ <div class="cd" style="padding:12px;background:${T.accent};color:${T.on};border:0"><span style="opacity:.8">Saved together in November</span><div class="ds mn big">₹38,200</div><span style="opacity:.8">You earned ₹540 in credits</span></div>
+ <b>Vendors asking to join</b>
+ <div class="cd" style="padding:2px 11px">${[["goat","Bakrid shares · Al-Noor Meats","7 shares per goat"],["mango","Devgad Alphonso · FPO","Apr–Jun, 6-dozen peti"]].map(([k,a,b])=>`<div class="li">${IC(k,30)}<div style="flex:1;min-width:0"><b>${a}</b><div class="mu">${b}</div></div><span class="pl" style="background:${T.accent};color:${T.on}">Approve</span></div>`).join("")}</div>
+ <b>Needs a nudge</b>
+ <div class="cd" style="padding:9px 11px;display:grid;gap:7px"><div class="rw sb"><span>Basmati · 8 kg to ₹88</span><span class="pl tg">2 h left</span></div><div class="gh">Remind 12 past buyers</div></div>
+</div>`);
+
+function render(){
+  const d=DIRS[cur];T=d.t;
+  const vars=Object.entries(T).map(([k,v])=>`--x-${k}:${v}`).join(";")+`;--x-disp:${d.disp};--x-body:${d.body}`;
+  let n=0;
+  document.querySelectorAll(".screens").forEach(el=>{
+    el.innerHTML=S[el.dataset.g].map(s=>{n++;return `<div class="shot"><div class="ph"><div class="sc" style="${vars}">${s.fn()}</div></div><div class="cap"><b><i>${String(n).padStart(2,"0")}</i>${s.title}</b><span>${s.note}</span></div></div>`}).join("");
+  });
+}
+let cur=2;
+try{const v=localStorage.getItem("js-dir");if(v!==null)cur=+v}catch(_){}
+document.querySelectorAll(".dirs button").forEach(b=>{b.classList.toggle("on",+b.dataset.d===cur);b.onclick=()=>{cur=+b.dataset.d;document.querySelectorAll(".dirs button").forEach(x=>x.classList.toggle("on",x===b));try{localStorage.setItem("js-dir",cur)}catch(_){}render()}});
+render();
+const dark=matchMedia("(prefers-color-scheme: dark)").matches;
+if(window.mermaid){mermaid.initialize({startOnLoad:true,theme:dark?"dark":"neutral",securityLevel:"loose",fontFamily:"Inter, sans-serif",er:{useMaxWidth:false},flowchart:{curve:"basis"}});}
+</script>
+</body>
+</html>

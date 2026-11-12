@@ -1,0 +1,23 @@
+# Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Dependencies / builds
+node_modules/
+dist/
+build/
+.next/
+.dart_tool/
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+
+# Third-party design references (not ours to publish)
+docs/design/reference/
+# Generated media sources
+media/

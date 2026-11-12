@@ -1,0 +1,167 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Jugaad Street Palettes</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one column of palette rows; each row = a live phone screen in that palette + its swatches and rationale */
+:root{
+  --bg:#F6F5F1; --fg:#1B1C1A; --muted:#64665F; --line:#E2E0D8; --card:#FFFFFF; --pick:#0B6B4B;
+  --display:"Baloo 2", "Trebuchet MS", system-ui, sans-serif;
+  --body:"Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#131412;--fg:#ECEBE6;--muted:#A3A49C;--line:#2A2B27;--card:#1C1D1A;--pick:#5FD3A2;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#131412;--fg:#ECEBE6;--muted:#A3A49C;--line:#2A2B27;--card:#1C1D1A;--pick:#5FD3A2;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:40px 64px}
+.wrap{max-width:1040px;margin:0 auto;display:grid;gap:28px}
+header h1{font-family:var(--display);font-weight:800;font-size:clamp(2rem,5vw,3rem);line-height:1;margin:0;letter-spacing:-.01em;text-wrap:balance}
+header p{color:var(--muted);max-width:62ch;margin:.6rem 0 0}
+.row{display:grid;grid-template-columns:300px 1fr;gap:28px;align-items:start;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px}
+@media (max-width:760px){.row{grid-template-columns:1fr}.phone{margin:0 auto}}
+.info{min-width:0;display:grid;gap:14px;align-content:start}
+.info h2{font-family:var(--display);font-weight:700;font-size:1.7rem;line-height:1.1;margin:0;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.tag{font-family:var(--body);font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:4px 9px;border-radius:999px;background:var(--pick);color:var(--card)}
+.info p{margin:0;color:var(--muted);max-width:60ch}
+.sw{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px}
+.s{border:1px solid var(--line);border-radius:12px;overflow:hidden;font-size:.8rem}
+.s i{display:block;height:52px}
+.s div{padding:7px 9px;display:grid}
+.s b{font-weight:600}
+.s code{font-family:ui-monospace,Menlo,monospace;color:var(--muted);font-size:.75rem}
+.copy{background:none;border:0;padding:0;text-align:left;cursor:pointer;color:inherit;font:inherit}
+.copy:focus-visible{outline:2px solid var(--pick);outline-offset:2px}
+.why{font-size:.88rem;display:grid;gap:4px;padding-left:0;margin:0;list-style:none}
+.why li::before{content:"+ ";color:var(--pick);font-weight:700}
+.why li.con::before{content:"− ";color:var(--muted)}
+.state{display:flex;gap:8px;flex-wrap:wrap}
+.state span{font-size:.75rem;font-weight:600;padding:4px 10px;border-radius:999px}
+
+/* ---- Phone (each palette sets its own --p-* tokens on .phone) ---- */
+.phone{width:300px;max-width:100%;border-radius:34px;padding:10px;background:#0E0F10;box-shadow:0 18px 40px rgb(0 0 0 / .18)}
+.scr{border-radius:26px;overflow:hidden;background:var(--p-surface);color:var(--p-ink);font-family:var(--body);font-size:12px;line-height:1.4}
+.bar{background:var(--p-primary);color:var(--p-on);padding:14px 14px 12px;display:flex;align-items:center;gap:10px}
+.av{width:32px;height:32px;border-radius:10px;background:var(--p-accent);color:var(--p-onaccent);display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:15px}
+.bar b{font-family:var(--display);font-size:15px;font-weight:700;display:block;line-height:1.1}
+.bar small{opacity:.8;font-size:10.5px}
+.chat{padding:12px;display:grid;gap:9px;background:var(--p-soft)}
+.msg{background:var(--p-surface);border-radius:14px 14px 14px 4px;padding:8px 10px;max-width:88%;box-shadow:0 1px 0 rgb(0 0 0 / .05)}
+.msg .who{font-weight:700;color:var(--p-primary);font-size:10.5px}
+.deal{background:var(--p-surface);border-radius:16px;padding:11px;border:1.5px solid var(--p-primary)}
+.deal h4{margin:0;font-family:var(--display);font-size:15px;line-height:1.1;font-weight:700}
+.deal .meta{font-size:10.5px;color:var(--p-muted);margin-top:2px}
+.fish{width:100%;height:auto;display:block;margin:8px 0 6px}
+.legend{display:flex;gap:10px;font-size:10px;color:var(--p-muted);flex-wrap:wrap}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+.prog{height:7px;border-radius:9px;background:var(--p-soft);overflow:hidden;margin:9px 0 4px}
+.prog i{display:block;height:100%;width:78%;background:var(--p-primary)}
+.row2{display:flex;justify-content:space-between;font-size:10.5px;color:var(--p-muted);font-variant-numeric:tabular-nums}
+.btn{margin-top:10px;width:100%;border:0;border-radius:12px;padding:10px;font:700 13px var(--body);background:var(--p-accent);color:var(--p-onaccent)}
+.sys{justify-self:center;font-size:10.5px;padding:5px 10px;border-radius:999px;background:var(--p-heldbg);color:var(--p-held);font-weight:600}
+.me{justify-self:end;background:var(--p-primary);color:var(--p-on);border-radius:14px 14px 4px 14px;padding:8px 10px;max-width:80%}
+.comp{display:flex;gap:8px;padding:10px 12px;background:var(--p-surface);border-top:1px solid var(--p-soft)}
+.comp span{flex:1;background:var(--p-soft);border-radius:999px;padding:8px 12px;color:var(--p-muted)}
+.comp i{width:32px;height:32px;border-radius:50%;background:var(--p-primary);display:block}
+.note{font-size:.85rem;color:var(--muted);border-top:1px solid var(--line);padding-top:18px}
+@media (prefers-reduced-motion:no-preference){.phone{transition:transform .25s}.phone:hover{transform:translateY(-3px)}}
+</style></head><body>
+
+<div class="wrap">
+  <header>
+    <h1>Jugaad Street — five colour directions</h1>
+    <p>Each direction is shown on the same real screen: a society's fish pool chat, with a whole seer fish split into cuts that neighbours claim. Money states use the same three colours everywhere: held, confirmed and released. Click any swatch to copy its hex.</p>
+  </header>
+  <div id="list" class="wrap" style="gap:22px"></div>
+  <p class="note">Type for every direction: <b>Baloo 2</b> for headings (designed in India, warm and round, reads well in Indian scripts too) with <b>Inter</b> for body text and prices. The fish uses real Kasimedu numbers: a 5.2 kg seer at about ₹950/kg is ₹4,940, split into a head, six steaks and a tail.</p>
+</div>
+
+<script>
+const P=[
+ {id:"rickshaw",name:"Auto Rickshaw",pick:true,
+  blurb:"The green, yellow and black of an Indian auto. Everyone in India recognises it, and it stands apart from the blue and purple of payment apps.",
+  pros:["Says “Indian street” at a glance, which fits the name","Green means fresh food and money that's safe","Yellow makes the Claim button impossible to miss"],
+  cons:["Yellow needs dark text, so never put white on it"],
+  t:{primary:"#0B6B4B",on:"#FFFFFF",accent:"#FFC72C",onaccent:"#1A1C1E",surface:"#FFFFFF",soft:"#F3F1E4",ink:"#1A1C1E",muted:"#6B6E66",held:"#8A5A00",heldbg:"#FFF1C7",claimed:"#0B6B4B",open:"#E6E3D3",mine:"#FFC72C"},
+  sw:[["Rickshaw green","#0B6B4B"],["Auto yellow","#FFC72C"],["Tyre black","#1A1C1E"],["Chalk","#F3F1E4"],["Held amber","#8A5A00"]]},
+ {id:"haldi",name:"Haldi & Neel",
+  blurb:"Turmeric and indigo, two of India's oldest dyes. Deep and calm, with more of a premium fintech feel.",
+  pros:["Indigo signals trust for money screens","Turmeric is warm and kitchen-coded"],
+  cons:["Feels less like a market and more like a bank"],
+  t:{primary:"#2B2F7E",on:"#FFFFFF",accent:"#F2A900",onaccent:"#1B1A10",surface:"#FFFFFF",soft:"#EEEDF6",ink:"#191A2E",muted:"#676884",held:"#8A5A00",heldbg:"#FFF0C9",claimed:"#2B2F7E",open:"#DFDDEE",mine:"#F2A900"},
+  sw:[["Neel indigo","#2B2F7E"],["Haldi","#F2A900"],["Ink","#191A2E"],["Mist","#EEEDF6"],["Held amber","#8A5A00"]]},
+ {id:"coastal",name:"Machhi Bazaar",
+  blurb:"Harbour teal and fresh-catch coral. The most natural fit for seafood, cool and clean like ice on a fish counter.",
+  pros:["Reads as fresh and hygienic","Coral claims stand out sharply on teal"],
+  cons:["Ties the brand to fish when it should grow to mangoes, meat and services"],
+  t:{primary:"#0F5C6E",on:"#FFFFFF",accent:"#FF6A4D",onaccent:"#FFFFFF",surface:"#FFFFFF",soft:"#E3F1F1",ink:"#0F2328",muted:"#5D7276",held:"#8A5A00",heldbg:"#FFF0C9",claimed:"#0F5C6E",open:"#CFE3E3",mine:"#FF6A4D"},
+  sw:[["Harbour teal","#0F5C6E"],["Fresh coral","#FF6A4D"],["Deep sea","#0F2328"],["Ice","#E3F1F1"],["Held amber","#8A5A00"]]},
+ {id:"truck",name:"Truck Art",
+  blurb:"Magenta, marigold and teal from painted Indian trucks (“Horn OK Please”). Loud, festive and fun.",
+  pros:["The most memorable one in a demo video","Suits festival drives like Bakrid shares and Diwali sweets"],
+  cons:["Hard to keep calm on payment screens","Three strong colours compete with each other"],
+  t:{primary:"#B0124F",on:"#FFFFFF",accent:"#FF9F1C",onaccent:"#1E1530",surface:"#FFFFFF",soft:"#FBEFF3",ink:"#1E1530",muted:"#74647A",held:"#8A5A00",heldbg:"#FFF0C9",claimed:"#0F8C8A",open:"#F0DCE4",mine:"#FF9F1C"},
+  sw:[["Truck magenta","#B0124F"],["Marigold","#FF9F1C"],["Paint teal","#0F8C8A"],["Night navy","#1E1530"],["Rose wash","#FBEFF3"]]},
+ {id:"paan",name:"Paan Patti",
+  blurb:"Betel-leaf green with kattha red. Earthy and grown-up, the corner paan shop rather than the highway.",
+  pros:["Calm, food-first and neighbourly","Red works as a strong call to action"],
+  cons:["Red can read as an error on payment screens"],
+  t:{primary:"#1E5B3A",on:"#FFFFFF",accent:"#C8243A",onaccent:"#FFFFFF",surface:"#FFFFFF",soft:"#EBF1E6",ink:"#13261A",muted:"#5F6E62",held:"#8A5A00",heldbg:"#FFF0C9",claimed:"#1E5B3A",open:"#D9E5D3",mine:"#C8243A"},
+  sw:[["Paan green","#1E5B3A"],["Kattha red","#C8243A"],["Leaf ink","#13261A"],["Lime wash","#EBF1E6"],["Held amber","#8A5A00"]]},
+];
+// cut states: 0 open, 1 claimed by others, 2 mine
+const cuts=[1,1,2,1,1,0,1,0]; // head, s1..s6, tail
+function fish(t,uid){
+  const xs=[0,58,88,118,148,178,208,238,280];
+  let segs="";
+  for(let i=0;i<8;i++){
+    const c=cuts[i]===0?t.open:cuts[i]===1?t.claimed:t.mine;
+    segs+=`<rect x="${xs[i]}" y="0" width="${xs[i+1]-xs[i]}" height="90" fill="${c}"/>`;
+    if(i>0) segs+=`<line x1="${xs[i]}" y1="0" x2="${xs[i]}" y2="90" stroke="${t.surface}" stroke-width="2.5"/>`;
+  }
+  return `<svg class="fish" viewBox="0 0 280 90" role="img" aria-label="Seer fish split into head, six steaks and tail; 6 of 8 cuts claimed">
+   <defs><clipPath id="c${uid}"><path d="M4 45 C30 10 90 8 150 12 C200 15 228 28 244 40 L276 12 L268 45 L276 78 L244 50 C228 62 200 75 150 78 C90 82 30 80 4 45 Z"/></clipPath></defs>
+   <g clip-path="url(#c${uid})">${segs}</g>
+   <circle cx="26" cy="40" r="4" fill="${t.surface}"/><circle cx="26" cy="40" r="2" fill="${t.ink}"/>
+  </svg>`;
+}
+function phone(p){
+  const t=p.t, v=Object.entries(t).map(([k,x])=>`--p-${k}:${x}`).join(";");
+  return `<div class="phone" style="${v}"><div class="scr">
+   <div class="bar"><div class="av">JS</div><div><b>Sea Breeze Towers</b><small>Fish pool · 46 neighbours</small></div></div>
+   <div class="chat">
+    <div class="msg"><div class="who">Murugan · Kasimedu vendor</div>Fresh seer just landed, 6:10 am. 5.2 kg whole. Cutting at 9.</div>
+    <div class="deal"><h4>Whole Seer · 5.2 kg</h4><div class="meta">₹950/kg · ₹4,940 · cutoff 8:30 am</div>
+     ${fish(t,p.id)}
+     <div class="legend"><span><i style="background:${t.claimed}"></i>Claimed</span><span><i style="background:${t.mine}"></i>Yours</span><span><i style="background:${t.open}"></i>Open</span></div>
+     <div class="prog"><i></i></div>
+     <div class="row2"><span>6 of 8 cuts</span><span>₹3,920 held</span></div>
+     <button class="btn" type="button" tabindex="-1">Claim a cut · from ₹320</button>
+    </div>
+    <div class="sys">Priya · Steak 2 · ₹700 held</div>
+    <div class="me">I'll take the tail if nobody wants it 🙋</div>
+   </div>
+   <div class="comp"><span>Message the pool</span><i></i></div>
+  </div></div>`;
+}
+const L=document.getElementById("list");
+P.forEach(p=>{
+  const r=document.createElement("section");r.className="row";r.id=p.id;
+  r.innerHTML=`${phone(p)}
+   <div class="info">
+    <h2>${p.name}${p.pick?'<span class="tag">Recommended</span>':""}</h2>
+    <p>${p.blurb}</p>
+    <div class="sw">${p.sw.map(([n,h])=>`<button class="s copy" type="button" data-hex="${h}" aria-label="Copy ${n} ${h}"><i style="background:${h}"></i><div><b>${n}</b><code>${h}</code></div></button>`).join("")}</div>
+    <ul class="why">${p.pros.map(x=>`<li>${x}</li>`).join("")}${p.cons.map(x=>`<li class="con">${x}</li>`).join("")}</ul>
+    <div class="state"><span style="background:${p.t.heldbg};color:${p.t.held}">₹ Held</span><span style="background:#DDF3E6;color:#0B5E3B">✓ Confirmed</span><span style="background:#ECEEF1;color:#4A5260">↺ Released</span></div>
+   </div>`;
+  L.appendChild(r);
+});
+document.addEventListener("click",e=>{
+  const b=e.target.closest(".copy");if(!b)return;
+  const code=b.querySelector("code"),old=code.textContent;
+  const done=()=>{code.textContent="Copied";setTimeout(()=>code.textContent=old,1100)};
+  try{navigator.clipboard.writeText(b.dataset.hex).then(done,()=>{})}catch(_){}
+});
+</script>
+</body></html>
