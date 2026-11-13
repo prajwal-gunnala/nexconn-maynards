@@ -93,7 +93,10 @@ class _HoldScreenState extends State<HoldScreen> {
         unitIds: b.type == BucketType.split ? d.unitIds : null,
         qty: b.type == BucketType.bulk || b.type == BucketType.service ? d.qty : null,
         items: b.type == BucketType.trip
-            ? [for (final e in d.items.entries) if (e.value > 0) {'id': e.key, 'qty': e.value}]
+            ? [
+                for (final e in d.items.entries)
+                  if (e.value > 0) {'id': e.key, 'qty': e.value},
+              ]
             : null,
         options: d.options.isEmpty ? null : d.options,
       );
@@ -214,15 +217,8 @@ class _HoldScreenState extends State<HoldScreen> {
       _Phase.creating || _Phase.pin when req != null => _upi(req),
       _Phase.creating => const Center(child: CircularProgressIndicator()),
       _Phase.failed => _failed(),
-      _Phase.success => HoldSuccessView(
-          view: _after ?? req!.view,
-          share: _share!,
-          vpa: _vpa,
-        ),
-      _Phase.booked => BookedView(
-          view: _after ?? req!.view,
-          share: _share!,
-        ),
+      _Phase.success => HoldSuccessView(view: _after ?? req!.view, share: _share!, vpa: _vpa),
+      _Phase.booked => BookedView(view: _after ?? req!.view, share: _share!),
       _ => const SizedBox.shrink(),
     };
     return PopScope(
@@ -240,26 +236,31 @@ class _HoldScreenState extends State<HoldScreen> {
   Widget _failed() {
     return Scaffold(
       backgroundColor: AppColors.surface,
-      appBar: AppBar(leading: IconButton(icon: const Icon(Icons.close_rounded), tooltip: 'Close', onPressed: _close)),
+      appBar: AppBar(
+        leading: IconButton(icon: const Icon(Icons.close_rounded), tooltip: 'Close', onPressed: _close),
+      ),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(AppSpace.xxl),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: const BoxDecoration(color: AppColors.brandTint, shape: BoxShape.circle),
-              child: const Icon(Icons.error_outline_rounded, size: 34, color: AppColors.brandDeep),
-            ),
-            const SizedBox(height: AppSpace.lg),
-            Text("Couldn't reserve your share", style: AppText.title, textAlign: TextAlign.center),
-            const SizedBox(height: AppSpace.sm),
-            Text(_failure ?? 'Something went wrong.', style: AppText.bodyMuted, textAlign: TextAlign.center),
-            const SizedBox(height: AppSpace.xs),
-            Text('No money was blocked.', style: AppText.label.copyWith(color: AppColors.save)),
-            const SizedBox(height: AppSpace.xxl),
-            AppButton(label: 'Back to the bucket', onPressed: _close, expand: false),
-          ]),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 72,
+                height: 72,
+                decoration: const BoxDecoration(color: AppColors.brandTint, shape: BoxShape.circle),
+                child: const Icon(Icons.error_outline_rounded, size: 34, color: AppColors.brandDeep),
+              ),
+              const SizedBox(height: AppSpace.lg),
+              Text("Couldn't reserve your share", style: AppText.title, textAlign: TextAlign.center),
+              const SizedBox(height: AppSpace.sm),
+              Text(_failure ?? 'Something went wrong.', style: AppText.bodyMuted, textAlign: TextAlign.center),
+              const SizedBox(height: AppSpace.xs),
+              Text('No money was blocked.', style: AppText.label.copyWith(color: AppColors.save)),
+              const SizedBox(height: AppSpace.xxl),
+              AppButton(label: 'Back to the bucket', onPressed: _close, expand: false),
+            ],
+          ),
         ),
       ),
     );
@@ -296,159 +297,242 @@ class _HoldScreenState extends State<HoldScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFF2A2421),
-      body: Column(children: [
-        // Dimmed summary of what is being held.
-        Expanded(
-          child: SafeArea(
-            bottom: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(AppSpace.sm, AppSpace.xs, AppSpace.gutter, AppSpace.lg),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                IconButton(
-                  onPressed: _cancel,
-                  tooltip: 'Cancel',
-                  icon: const Icon(Icons.close_rounded, color: Colors.white),
-                ),
-                const Spacer(),
-                Padding(
-                  padding: const EdgeInsets.only(left: AppSpace.sm),
-                  child: Row(children: [
-                    SizedBox(
-                      width: 64,
-                      height: 64,
-                      child: BucketPhoto(visual: BucketVisual.of(b.image ?? b.category ?? b.title), url: b.image, height: 64),
-                    ),
-                    const SizedBox(width: AppSpace.md),
-                    Expanded(
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(b.title, style: AppText.heading.copyWith(color: Colors.white), maxLines: 1, overflow: TextOverflow.ellipsis),
-                        const SizedBox(height: 2),
-                        Text(
-                          [shareLabel, b.vendor?.name].whereType<String>().where((s) => s.isNotEmpty).join(' · '),
-                          style: AppText.caption.copyWith(color: Colors.white.withValues(alpha: 0.7)),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+      body: LayoutBuilder(
+        builder: (context, c) {
+          final mq = MediaQuery.of(context);
+          final usable = c.maxHeight - mq.padding.top - mq.padding.bottom;
+          final compact = usable < 800;
+          return CustomScrollView(
+            slivers: [
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Close + dimmed summary of what is being held.
+                    SafeArea(
+                      bottom: false,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(AppSpace.sm, AppSpace.xs, AppSpace.gutter, 0),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: IconButton(
+                            onPressed: _cancel,
+                            tooltip: 'Cancel',
+                            icon: const Icon(Icons.close_rounded, color: Colors.white),
+                          ),
                         ),
-                      ]),
+                      ),
                     ),
-                  ]),
-                ),
-              ]),
-            ),
-          ),
-        ),
-        // The UPI Reserve sheet.
-        Container(
-          decoration: const BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.sheet)),
-          ),
-          child: SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(AppSpace.xl, AppSpace.md, AppSpace.xl, AppSpace.md),
-              child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Center(
-                  child: Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.line, borderRadius: BorderRadius.circular(2))),
-                ),
-                const SizedBox(height: AppSpace.lg),
-                Row(children: [
-                  Expanded(child: LiveText('Hold ${Fmt.rupees(amount)}', style: AppText.title.copyWith(fontSize: 24))),
-                  const StatusPill('UPI Reserve', tone: PillTone.held, icon: Icons.lock_clock_outlined),
-                ]),
-                const SizedBox(height: AppSpace.lg),
-                const _Step(n: '1', title: 'Held in your bank now', sub: 'Still your money. Nothing is paid yet.', on: true),
-                _Step(n: '2', title: 'Paid at the final price', sub: paidLine),
-                _Step(n: '3', title: "Released if the bucket doesn't fill", sub: releaseLine, last: true),
-                const SizedBox(height: AppSpace.lg),
-                // Stand-in for the member's UPI app: the PIN step happens there in the live app.
-                Container(
-                  padding: const EdgeInsets.fromLTRB(AppSpace.md, AppSpace.xs, AppSpace.md, AppSpace.sm),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.line),
-                  ),
-                  child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    Semantics(
-                      button: true,
-                      label: 'Your UPI app, paying from $_vpa. Tap to change',
-                      excludeSemantics: true,
-                      child: InkWell(
-                        onTap: _editVpa,
-                        borderRadius: BorderRadius.circular(10),
-                        child: SizedBox(
-                          height: 52,
-                          child: Row(children: [
-                            Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(color: AppColors.canvas, borderRadius: BorderRadius.circular(10)),
-                              child: const Icon(Icons.account_balance_outlined, size: 20, color: AppColors.ink),
+                    const Spacer(),
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(AppSpace.gutter, AppSpace.sm, AppSpace.gutter, compact ? AppSpace.md : AppSpace.lg),
+                      child: Row(
+                        children: [
+                          SizedBox(
+                            width: compact ? 44 : 56,
+                            height: compact ? 44 : 56,
+                            child: BucketPhoto(
+                              visual: BucketVisual.of(b.image ?? b.category ?? b.title),
+                              url: b.image,
+                              height: compact ? 44 : 56,
                             ),
-                            const SizedBox(width: AppSpace.md),
-                            Expanded(
-                              child: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                Text('Your UPI app', style: AppText.tiny),
-                                Text('UPI · $_vpa', style: AppText.label.copyWith(fontWeight: FontWeight.w700), overflow: TextOverflow.ellipsis),
-                              ]),
+                          ),
+                          const SizedBox(width: AppSpace.md),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  b.title,
+                                  style: AppText.heading.copyWith(color: Colors.white),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  [shareLabel, b.vendor?.name].whereType<String>().where((s) => s.isNotEmpty).join(' · '),
+                                  style: AppText.caption.copyWith(color: Colors.white.withValues(alpha: 0.7)),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
                             ),
-                            Text('Change', style: AppText.label.copyWith(color: AppColors.brand)),
-                          ]),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // The UPI Reserve sheet.
+                    Container(
+                      decoration: const BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.sheet)),
+                      ),
+                      child: SafeArea(
+                        top: false,
+                        child: Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            compact ? AppSpace.lg : AppSpace.xl,
+                            AppSpace.md,
+                            compact ? AppSpace.lg : AppSpace.xl,
+                            AppSpace.md,
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Center(
+                                child: Container(
+                                  width: 40,
+                                  height: 4,
+                                  decoration: BoxDecoration(color: AppColors.line, borderRadius: BorderRadius.circular(2)),
+                                ),
+                              ),
+                              SizedBox(height: compact ? AppSpace.md : AppSpace.lg),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: LiveText(
+                                      'Hold ${Fmt.rupees(amount)}',
+                                      style: AppText.title.copyWith(fontSize: compact ? 22 : 24),
+                                    ),
+                                  ),
+                                  const StatusPill('UPI Reserve', tone: PillTone.held, icon: Icons.lock_clock_outlined),
+                                ],
+                              ),
+                              SizedBox(height: compact ? AppSpace.md : AppSpace.lg),
+                              _Step(
+                                n: '1',
+                                title: 'Held in your bank now',
+                                sub: 'Still your money. Nothing is paid yet.',
+                                on: true,
+                                compact: compact,
+                              ),
+                              _Step(n: '2', title: 'Paid at the final price', sub: paidLine, compact: compact),
+                              _Step(n: '3', title: "Released if the bucket doesn't fill", sub: releaseLine, last: true, compact: compact),
+                              SizedBox(height: compact ? AppSpace.md : AppSpace.lg),
+                              // Stand-in for the member's UPI app: the PIN step happens there in the live app.
+                              Container(
+                                padding: const EdgeInsets.fromLTRB(AppSpace.md, AppSpace.xs, AppSpace.md, AppSpace.sm),
+                                decoration: BoxDecoration(
+                                  color: AppColors.surface,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: AppColors.line),
+                                ),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Semantics(
+                                      button: true,
+                                      label: 'Your UPI app, paying from $_vpa. Tap to change',
+                                      excludeSemantics: true,
+                                      child: InkWell(
+                                        onTap: _editVpa,
+                                        borderRadius: BorderRadius.circular(10),
+                                        child: SizedBox(
+                                          height: 52,
+                                          child: Row(
+                                            children: [
+                                              Container(
+                                                width: 36,
+                                                height: 36,
+                                                decoration: BoxDecoration(color: AppColors.canvas, borderRadius: BorderRadius.circular(10)),
+                                                child: const Icon(Icons.account_balance_outlined, size: 20, color: AppColors.ink),
+                                              ),
+                                              const SizedBox(width: AppSpace.md),
+                                              Expanded(
+                                                child: Column(
+                                                  mainAxisAlignment: MainAxisAlignment.center,
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text('Your UPI app', style: AppText.tiny),
+                                                    Text(
+                                                      'UPI · $_vpa',
+                                                      style: AppText.label.copyWith(fontWeight: FontWeight.w700),
+                                                      overflow: TextOverflow.ellipsis,
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              Text('Change', style: AppText.label.copyWith(color: AppColors.brand)),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const Divider(height: AppSpace.md),
+                                    const SizedBox(height: AppSpace.xs),
+                                    Text(
+                                      _authorizing ? 'Authorizing with your bank…' : 'Enter your 6-digit UPI PIN',
+                                      style: AppText.label.copyWith(color: AppColors.inkMuted),
+                                    ),
+                                    const SizedBox(height: AppSpace.md),
+                                    PinDots(length: _pin.length, error: _pinError != null, shakeKey: _shake),
+                                    SizedBox(
+                                      height: 26,
+                                      child: Center(
+                                        child: AnimatedSwitcher(
+                                          duration: const Duration(milliseconds: 200),
+                                          child: _pinError == null
+                                              ? (_authorizing
+                                                    ? const SizedBox(
+                                                        width: 16,
+                                                        height: 16,
+                                                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.brand),
+                                                      )
+                                                    : const SizedBox.shrink())
+                                              : Text(
+                                                  _pinError!,
+                                                  key: ValueKey(_pinError),
+                                                  style: AppText.label.copyWith(color: AppColors.danger),
+                                                ),
+                                        ),
+                                      ),
+                                    ),
+                                    PinPad(
+                                      keyHeight: compact ? 44 : 52,
+                                      enabled: ready && !_authorizing,
+                                      onDigit: _digit,
+                                      onDelete: _delete,
+                                      onSubmit: _pin.length >= 4 ? _authorize : null,
+                                    ),
+                                    const SizedBox(height: AppSpace.sm),
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.info_outline_rounded, size: 14, color: AppColors.inkMuted),
+                                        const SizedBox(width: 6),
+                                        Expanded(
+                                          child: Text(
+                                            'Demo: in the live app this step opens your UPI app. Your PIN never touches Jugaad Street.',
+                                            style: AppText.tiny.copyWith(fontWeight: FontWeight.w500, height: 1.35),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                    const Divider(height: AppSpace.md),
-                    const SizedBox(height: AppSpace.xs),
-                    Text(
-                      _authorizing ? 'Authorizing with your bank…' : 'Enter your 6-digit UPI PIN',
-                      style: AppText.label.copyWith(color: AppColors.inkMuted),
-                    ),
-                    const SizedBox(height: AppSpace.md),
-                    PinDots(length: _pin.length, error: _pinError != null, shakeKey: _shake),
-                    SizedBox(
-                      height: 26,
-                      child: Center(
-                        child: AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 200),
-                          child: _pinError == null
-                              ? (_authorizing
-                                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.brand))
-                                  : const SizedBox.shrink())
-                              : Text(_pinError!, key: ValueKey(_pinError), style: AppText.label.copyWith(color: AppColors.danger)),
-                        ),
-                      ),
-                    ),
-                    PinPad(
-                      enabled: ready && !_authorizing,
-                      onDigit: _digit,
-                      onDelete: _delete,
-                      onSubmit: _pin.length >= 4 ? _authorize : null,
-                    ),
-                    const SizedBox(height: AppSpace.sm),
-                    Row(children: [
-                      const Icon(Icons.info_outline_rounded, size: 14, color: AppColors.inkMuted),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          'Demo: in the live app this step opens your UPI app. Your PIN never touches Jugaad Street.',
-                          style: AppText.tiny.copyWith(fontWeight: FontWeight.w500, height: 1.35),
-                        ),
-                      ),
-                    ]),
-                  ]),
+                  ],
                 ),
-              ]),
-            ),
-          ),
-        ),
-      ]),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 }
 
 class _Step extends StatelessWidget {
-  const _Step({required this.n, required this.title, required this.sub, this.on = false, this.last = false});
+  const _Step({required this.n, required this.title, required this.sub, this.on = false, this.last = false, this.compact = false});
+
+  final bool compact;
 
   final String n;
   final String title;
@@ -459,33 +543,47 @@ class _Step extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return IntrinsicHeight(
-      child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Column(children: [
-          Container(
-            width: 24,
-            height: 24,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: on ? AppColors.held : AppColors.surface,
-              shape: BoxShape.circle,
-              border: Border.all(color: on ? AppColors.held : AppColors.line, width: 1.5),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Column(
+            children: [
+              Container(
+                width: 24,
+                height: 24,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: on ? AppColors.held : AppColors.surface,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: on ? AppColors.held : AppColors.line, width: 1.5),
+                ),
+                child: Text(
+                  n,
+                  style: AppText.tiny.copyWith(color: on ? Colors.white : AppColors.inkMuted, fontWeight: FontWeight.w800),
+                ),
+              ),
+              if (!last)
+                Expanded(
+                  child: Container(width: 1.5, color: AppColors.line, margin: const EdgeInsets.symmetric(vertical: 2)),
+                ),
+            ],
+          ),
+          const SizedBox(width: AppSpace.md),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(bottom: last ? 0 : (compact ? AppSpace.sm : AppSpace.md)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: AppText.label.copyWith(fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 1),
+                  Text(sub, style: AppText.caption.tab),
+                ],
+              ),
             ),
-            child: Text(n, style: AppText.tiny.copyWith(color: on ? Colors.white : AppColors.inkMuted, fontWeight: FontWeight.w800)),
           ),
-          if (!last) Expanded(child: Container(width: 1.5, color: AppColors.line, margin: const EdgeInsets.symmetric(vertical: 2))),
-        ]),
-        const SizedBox(width: AppSpace.md),
-        Expanded(
-          child: Padding(
-            padding: EdgeInsets.only(bottom: last ? 0 : AppSpace.md),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(title, style: AppText.label.copyWith(fontWeight: FontWeight.w700)),
-              const SizedBox(height: 1),
-              Text(sub, style: AppText.caption.tab),
-            ]),
-          ),
-        ),
-      ]),
+        ],
+      ),
     );
   }
 }

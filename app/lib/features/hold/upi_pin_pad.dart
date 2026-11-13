@@ -80,7 +80,10 @@ class _PinDotsState extends State<PinDots> with SingleTickerProviderStateMixin {
 
 /// 3×4 numeric keypad: 1–9, delete, 0, submit.
 class PinPad extends StatelessWidget {
-  const PinPad({super.key, required this.onDigit, required this.onDelete, required this.onSubmit, this.enabled = true});
+  const PinPad({super.key, required this.onDigit, required this.onDelete, required this.onSubmit, this.enabled = true, this.keyHeight = 52});
+
+  /// 52 normally, smaller on short screens.
+  final double keyHeight;
 
   final ValueChanged<String> onDigit;
   final VoidCallback onDelete;
@@ -110,7 +113,7 @@ class PinPad extends StatelessWidget {
                           onTap();
                         }
                       : null,
-                  child: SizedBox(height: 52, child: Center(child: child)),
+                  child: SizedBox(height: keyHeight, child: Center(child: child)),
                 ),
               ),
             ),

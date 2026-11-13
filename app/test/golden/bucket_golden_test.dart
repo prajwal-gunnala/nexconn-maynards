@@ -37,8 +37,11 @@ Map<String, dynamic> bucketFx(String id, {Duration closesIn = const Duration(hou
 Map<String, dynamic> me() => {'id': 'u_ananya', 'name': 'Ananya', 'unit': 'B-1204'};
 
 /// Wraps [child] with its own ApiClient so a test can return errors or hang.
-Widget withApi(Widget child, Future<http.Response> Function(http.Request req, MockClient fallback) handler,
-    {Map<String, Object?> overrides = const {}}) {
+Widget withApi(
+  Widget child,
+  Future<http.Response> Function(http.Request req, MockClient fallback) handler, {
+  Map<String, Object?> overrides = const {},
+}) {
   final fallback = fixtureHttp(overrides: overrides);
   final api = ApiClient(baseUrl: 'http://test', httpClient: MockClient((req) => handler(req, fallback)));
   return Provider<ApiClient>.value(value: api, child: child);
@@ -52,10 +55,12 @@ Future<http.Response> passThrough(http.Request req, MockClient fallback) async {
 }
 
 http.Response jsonError(int status, String code, String message) => http.Response(
-      jsonEncode({'error': {'code': code, 'message': message}}),
-      status,
-      headers: {'content-type': 'application/json; charset=utf-8'},
-    );
+  jsonEncode({
+    'error': {'code': code, 'message': message},
+  }),
+  status,
+  headers: {'content-type': 'application/json; charset=utf-8'},
+);
 
 Future<void> settle(WidgetTester t, {int ms = 900}) async {
   await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 120)));
@@ -84,6 +89,15 @@ Future<void> reveal(WidgetTester t, Finder f, {double up = 0}) async {
   await t.pump(const Duration(milliseconds: 600));
 }
 
+/// Switches to a 360×800 phone (dpr 2) with a status bar and gesture-nav inset, like the QA device.
+Future<void> small(WidgetTester t) async {
+  t.view.physicalSize = const Size(720, 1600);
+  t.view.devicePixelRatio = 2;
+  t.view.padding = const FakeViewPadding(top: 48, bottom: 96);
+  t.view.viewPadding = const FakeViewPadding(top: 48, bottom: 96);
+  await t.pump(const Duration(milliseconds: 300));
+}
+
 Map<String, Object?> detailOv(String id, Map<String, dynamic> j) => {'/api/buckets/$id': j};
 
 void main() {
@@ -96,36 +110,56 @@ void main() {
 
   testWidgets('seer share map', (t) async {
     final j = bucketFx('b_seer', closesIn: const Duration(hours: 2, minutes: 40));
-    await shoot(t, 'detail_seer_map', const BucketDetailScreen(bucketId: 'b_seer'),
-        overrides: detailOv('b_seer', j), act: (t) async => scrollDown(t, 520));
+    await shoot(
+      t,
+      'detail_seer_map',
+      const BucketDetailScreen(bucketId: 'b_seer'),
+      overrides: detailOv('b_seer', j),
+      act: (t) async => scrollDown(t, 520),
+    );
   });
 
   testWidgets('seer cut selected', (t) async {
     final j = bucketFx('b_seer', closesIn: const Duration(hours: 2, minutes: 40));
-    await shoot(t, 'detail_seer_selected', const BucketDetailScreen(bucketId: 'b_seer'), overrides: detailOv('b_seer', j),
-        act: (t) async {
-      await scrollDown(t, 560);
-      await t.tap(find.text('Steak 2 · ₹680'));
-      await t.pump(const Duration(milliseconds: 400));
-      await scrollDown(t, 160);
-    });
+    await shoot(
+      t,
+      'detail_seer_selected',
+      const BucketDetailScreen(bucketId: 'b_seer'),
+      overrides: detailOv('b_seer', j),
+      act: (t) async {
+        await scrollDown(t, 560);
+        await t.tap(find.text('Steak 2 · ₹680'));
+        await t.pump(const Duration(milliseconds: 400));
+        await scrollDown(t, 160);
+      },
+    );
   });
 
   testWidgets('seer lower page', (t) async {
     final j = bucketFx('b_seer', closesIn: const Duration(hours: 2, minutes: 40));
-    await shoot(t, 'detail_seer_lower', const BucketDetailScreen(bucketId: 'b_seer'), overrides: detailOv('b_seer', j),
-        act: (t) async => reveal(t, find.text('How your money works')));
+    await shoot(
+      t,
+      'detail_seer_lower',
+      const BucketDetailScreen(bucketId: 'b_seer'),
+      overrides: detailOv('b_seer', j),
+      act: (t) async => reveal(t, find.text('How your money works')),
+    );
   });
 
   testWidgets('goat tiles', (t) async {
     final j = bucketFx('b_goat', closesIn: const Duration(days: 1, hours: 18));
-    await shoot(t, 'detail_goat', const BucketDetailScreen(bucketId: 'b_goat'), overrides: detailOv('b_goat', j),
-        act: (t) async {
-      await scrollDown(t, 560);
-      final open = find.textContaining('Open');
-      if (open.evaluate().isNotEmpty) await t.tap(open.first);
-      await t.pump(const Duration(milliseconds: 400));
-    });
+    await shoot(
+      t,
+      'detail_goat',
+      const BucketDetailScreen(bucketId: 'b_goat'),
+      overrides: detailOv('b_goat', j),
+      act: (t) async {
+        await scrollDown(t, 560);
+        final open = find.textContaining('Open');
+        if (open.evaluate().isNotEmpty) await t.tap(open.first);
+        await t.pump(const Duration(milliseconds: 400));
+      },
+    );
   });
 
   testWidgets('basmati bulk', (t) async {
@@ -135,73 +169,114 @@ void main() {
 
   testWidgets('basmati tiers', (t) async {
     final j = bucketFx('b_basmati', closesIn: const Duration(hours: 17));
-    await shoot(t, 'detail_basmati_tiers', const BucketDetailScreen(bucketId: 'b_basmati'), overrides: detailOv('b_basmati', j),
-        act: (t) async => scrollDown(t, 520));
+    await shoot(
+      t,
+      'detail_basmati_tiers',
+      const BucketDetailScreen(bucketId: 'b_basmati'),
+      overrides: detailOv('b_basmati', j),
+      act: (t) async => scrollDown(t, 520),
+    );
   });
 
   testWidgets('alphonso bulk', (t) async {
     final j = bucketFx('b_alphonso', closesIn: const Duration(hours: 20));
-    await shoot(t, 'detail_alphonso', const BucketDetailScreen(bucketId: 'b_alphonso'), overrides: detailOv('b_alphonso', j),
-        act: (t) async => scrollDown(t, 520));
+    await shoot(
+      t,
+      'detail_alphonso',
+      const BucketDetailScreen(bucketId: 'b_alphonso'),
+      overrides: detailOv('b_alphonso', j),
+      act: (t) async => scrollDown(t, 520),
+    );
   });
 
   testWidgets('pest service live', (t) async {
     final j = bucketFx('b_pest', closesIn: const Duration(days: 2, hours: 4))..['myShare'] = null;
     j['shares'] = (j['shares'] as List).where((s) => (s as Map)['user']['id'] != 'u_ananya').toList();
-    await shoot(t, 'detail_pest', const BucketDetailScreen(bucketId: 'b_pest'), overrides: detailOv('b_pest', j),
-        act: (t) async => scrollDown(t, 520));
+    await shoot(
+      t,
+      'detail_pest',
+      const BucketDetailScreen(bucketId: 'b_pest'),
+      overrides: detailOv('b_pest', j),
+      act: (t) async => scrollDown(t, 520),
+    );
   });
 
   testWidgets('pest my share', (t) async {
     final j = bucketFx('b_pest', closesIn: const Duration(days: 2, hours: 4));
-    await shoot(t, 'detail_pest_myshare', const BucketDetailScreen(bucketId: 'b_pest'), overrides: detailOv('b_pest', j),
-        act: (t) async => scrollDown(t, 420));
+    await shoot(
+      t,
+      'detail_pest_myshare',
+      const BucketDetailScreen(bucketId: 'b_pest'),
+      overrides: detailOv('b_pest', j),
+      act: (t) async => scrollDown(t, 420),
+    );
   });
 
   testWidgets('trip list', (t) async {
     final j = bucketFx('b_trip', closesIn: const Duration(hours: 9));
-    await shoot(t, 'detail_trip', const BucketDetailScreen(bucketId: 'b_trip'), overrides: detailOv('b_trip', j),
-        act: (t) async => scrollDown(t, 560));
+    await shoot(
+      t,
+      'detail_trip',
+      const BucketDetailScreen(bucketId: 'b_trip'),
+      overrides: detailOv('b_trip', j),
+      act: (t) async => scrollDown(t, 560),
+    );
   });
 
   testWidgets('trip list with my items', (t) async {
     final j = bucketFx('b_trip', closesIn: const Duration(hours: 9));
-    await shoot(t, 'detail_trip_items', const BucketDetailScreen(bucketId: 'b_trip'), overrides: detailOv('b_trip', j),
-        act: (t) async {
-      final plus = find.descendant(of: find.byType(QtyStepper), matching: find.byIcon(Icons.add_rounded));
-      Future<void> add(String name, int extra) async {
-        final row = find.ancestor(of: find.text(name), matching: find.byType(Row)).first;
-        final btn = find.descendant(of: row, matching: find.text('Add'));
-        await t.ensureVisible(btn);
-        await t.pump(const Duration(milliseconds: 300));
-        await t.tap(btn);
-        await t.pump(const Duration(milliseconds: 300));
-        for (var i = 0; i < extra; i++) {
-          await t.tap(find.descendant(of: row, matching: plus));
-          await t.pump(const Duration(milliseconds: 100));
+    await shoot(
+      t,
+      'detail_trip_items',
+      const BucketDetailScreen(bucketId: 'b_trip'),
+      overrides: detailOv('b_trip', j),
+      act: (t) async {
+        final plus = find.descendant(of: find.byType(QtyStepper), matching: find.byIcon(Icons.add_rounded));
+        Future<void> add(String name, int extra) async {
+          final row = find.ancestor(of: find.text(name), matching: find.byType(Row)).first;
+          final btn = find.descendant(of: row, matching: find.text('Add'));
+          await t.ensureVisible(btn);
+          await t.pump(const Duration(milliseconds: 300));
+          await t.tap(btn);
+          await t.pump(const Duration(milliseconds: 300));
+          for (var i = 0; i < extra; i++) {
+            await t.tap(find.descendant(of: row, matching: plus));
+            await t.pump(const Duration(milliseconds: 100));
+          }
         }
-      }
-      await add('Onion', 4);
-      await add('Tomato', 2);
-      await add('Coconut', 3);
-      await reveal(t, find.text('Add from the list'));
-    });
+
+        await add('Onion', 4);
+        await add('Tomato', 2);
+        await add('Coconut', 3);
+        await reveal(t, find.text('Add from the list'));
+      },
+    );
   });
 
   testWidgets('paarai book and meet', (t) async {
     final j = bucketFx('b_paarai', closesIn: const Duration(hours: 19));
-    await shoot(t, 'detail_paarai', const BucketDetailScreen(bucketId: 'b_paarai'), overrides: detailOv('b_paarai', j),
-        act: (t) async {
-      await scrollDown(t, 520);
-      await t.tap(find.text('Open').first);
-      await t.pump(const Duration(milliseconds: 300));
-    });
+    await shoot(
+      t,
+      'detail_paarai',
+      const BucketDetailScreen(bucketId: 'b_paarai'),
+      overrides: detailOv('b_paarai', j),
+      act: (t) async {
+        await scrollDown(t, 520);
+        await t.tap(find.text('Open').first);
+        await t.pump(const Duration(milliseconds: 300));
+      },
+    );
   });
 
   testWidgets('paarai meet card', (t) async {
     final j = bucketFx('b_paarai', closesIn: const Duration(hours: 19));
-    await shoot(t, 'detail_paarai_meet', const BucketDetailScreen(bucketId: 'b_paarai'), overrides: detailOv('b_paarai', j),
-        act: (t) async => reveal(t, find.text('Meet at the market')));
+    await shoot(
+      t,
+      'detail_paarai_meet',
+      const BucketDetailScreen(bucketId: 'b_paarai'),
+      overrides: detailOv('b_paarai', j),
+      act: (t) async => reveal(t, find.text('Meet at the market')),
+    );
   });
 
   testWidgets('paarai market day check-in', (t) async {
@@ -211,15 +286,31 @@ void main() {
     final units = (j['units'] as List).cast<Map<String, dynamic>>();
     units[1] = {...units[1], 'owner': me()};
     final mine = {
-      'id': 's_mine', 'bucketId': 'b_paarai', 'user': me(), 'qty': 1, 'qtyLabel': 'Tail half', 'unitIds': ['tail_half'],
-      'items': null, 'options': {'cut': 'Fry slices'}, 'payMode': 'at_market', 'status': 'booked', 'estAmount': 700,
-      'finalAmount': null, 'hold': null, 'otp': null,
+      'id': 's_mine',
+      'bucketId': 'b_paarai',
+      'user': me(),
+      'qty': 1,
+      'qtyLabel': 'Tail half',
+      'unitIds': ['tail_half'],
+      'items': null,
+      'options': {'cut': 'Fry slices'},
+      'payMode': 'at_market',
+      'status': 'booked',
+      'estAmount': 700,
+      'finalAmount': null,
+      'hold': null,
+      'otp': null,
     };
     j['myShare'] = mine;
     j['shares'] = [...(j['shares'] as List), mine];
     j['progress'] = {...(j['progress'] as Map), 'filled': 2, 'members': 2, 'percent': 100};
-    await shoot(t, 'detail_paarai_checkin', const BucketDetailScreen(bucketId: 'b_paarai'), overrides: detailOv('b_paarai', j),
-        act: (t) async => reveal(t, find.text("I'm here"), up: 560));
+    await shoot(
+      t,
+      'detail_paarai_checkin',
+      const BucketDetailScreen(bucketId: 'b_paarai'),
+      overrides: detailOv('b_paarai', j),
+      act: (t) async => reveal(t, find.text("I'm here"), up: 560),
+    );
   });
 
   // ---- closed states ---------------------------------------------------------------------
@@ -229,8 +320,12 @@ void main() {
   });
 
   testWidgets('prawns completed lower', (t) async {
-    await shoot(t, 'detail_prawns_completed_lower', const BucketDetailScreen(bucketId: 'b_past_prawns'),
-        act: (t) async => scrollDown(t, 600));
+    await shoot(
+      t,
+      'detail_prawns_completed_lower',
+      const BucketDetailScreen(bucketId: 'b_past_prawns'),
+      act: (t) async => scrollDown(t, 600),
+    );
   });
 
   testWidgets('crab expired', (t) async {
@@ -248,45 +343,105 @@ void main() {
     await shoot(
       t,
       'detail_error',
-      withApi(const BucketDetailScreen(bucketId: 'b_seer'),
-          (req, fb) async => jsonError(503, 'NETWORK', "Can't reach the server. Check your connection.")),
+      withApi(
+        const BucketDetailScreen(bucketId: 'b_seer'),
+        (req, fb) async => jsonError(503, 'NETWORK', "Can't reach the server. Check your connection."),
+      ),
     );
   });
 
   // ---- hold flow -------------------------------------------------------------------------
 
-  HoldRequest basmatiReq() =>
-      HoldRequest(view: BucketView.fromJson(bucketFx('b_basmati', closesIn: const Duration(hours: 17))), draft: const JoinDraft(qty: 10));
+  HoldRequest basmatiReq() => HoldRequest(
+    view: BucketView.fromJson(bucketFx('b_basmati', closesIn: const Duration(hours: 17))),
+    draft: const JoinDraft(qty: 10),
+  );
 
   Map<String, dynamic> pendingShare(int amount) => {
-        'id': 's_new', 'bucketId': 'b_basmati', 'user': me(), 'qty': 10, 'qtyLabel': '10 kg', 'unitIds': null, 'items': null,
-        'options': null, 'payMode': 'hold', 'status': 'pending_payment', 'estAmount': amount, 'finalAmount': null,
-        'hold': {'id': 'h_new', 'amount': amount, 'status': 'created', 'vpa': null}, 'otp': null,
-      };
+    'id': 's_new',
+    'bucketId': 'b_basmati',
+    'user': me(),
+    'qty': 10,
+    'qtyLabel': '10 kg',
+    'unitIds': null,
+    'items': null,
+    'options': null,
+    'payMode': 'hold',
+    'status': 'pending_payment',
+    'estAmount': amount,
+    'finalAmount': null,
+    'hold': {'id': 'h_new', 'amount': amount, 'status': 'created', 'vpa': null},
+    'otp': null,
+  };
+
+  Map<String, dynamic> heldShare() => {
+    ...pendingShare(960),
+    'status': 'held',
+    'hold': {'id': 'h_new', 'amount': 960, 'status': 'held', 'vpa': 'ananya@okaxis'},
+  };
 
   Map<String, dynamic> basmatiAfter() {
     final j = bucketFx('b_basmati', closesIn: const Duration(hours: 17));
-    j['progress'] = {...(j['progress'] as Map), 'filled': 97, 'members': 8, 'percent': 97, 'held': 9312,
-      'nextTier': {'minQty': 100, 'unitPrice': 88, 'remaining': 3}};
+    j['progress'] = {
+      ...(j['progress'] as Map),
+      'filled': 97,
+      'members': 8,
+      'percent': 97,
+      'held': 9312,
+      'nextTier': {'minQty': 100, 'unitPrice': 88, 'remaining': 3},
+    };
+    j['myShare'] = heldShare();
+    return j;
+  }
+
+  Map<String, dynamic> basmatiLocked() {
+    final j = basmatiAfter();
+    j['status'] = 'ordered';
+    j['orderId'] = 'JS-2045';
+    j['progress'] = {...(j['progress'] as Map), 'filled': 100, 'members': 9, 'percent': 100, 'held': 0, 'unitPrice': 88, 'nextTier': null};
+    j['myShare'] = {
+      ...heldShare(),
+      'status': 'captured',
+      'finalAmount': 880,
+      'orderId': 'JS-2045',
+      'hold': {'id': 'h_new', 'amount': 960, 'status': 'captured', 'vpa': 'ananya@okaxis'},
+    };
     return j;
   }
 
   Map<String, Object?> holdOv() => {
-        'POST /api/buckets/b_basmati/shares': {'share': pendingShare(960), 'bucket': bucketFx('b_basmati')},
-        'POST /api/holds/h_new/authorize': {
-          'share': {...pendingShare(960), 'status': 'held', 'hold': {'id': 'h_new', 'amount': 960, 'status': 'held', 'vpa': 'ananya@okaxis'}},
-          'bucket': basmatiAfter(),
-        },
-      };
+    'POST /api/buckets/b_basmati/shares': {'share': pendingShare(960), 'bucket': bucketFx('b_basmati')},
+    'POST /api/holds/h_new/authorize': {'share': heldShare(), 'bucket': basmatiAfter()},
+    '/api/buckets/b_basmati': basmatiAfter(),
+  };
+
+  Future<void> enterPin(WidgetTester t) async {
+    await settle(t, ms: 300);
+    for (final d in '482915'.split('')) {
+      await t.tap(find.bySemanticsLabel('Digit $d'));
+      await t.pump(const Duration(milliseconds: 50));
+    }
+    await settle(t, ms: 1500);
+  }
 
   testWidgets('hold sheet empty', (t) async {
-    await shoot(t, 'hold_sheet', HoldScreen(bucketId: 'b_basmati', request: basmatiReq()), overrides: holdOv(),
-        act: (t) async => settle(t));
+    await shoot(
+      t,
+      'hold_sheet',
+      HoldScreen(bucketId: 'b_basmati', request: basmatiReq()),
+      overrides: holdOv(),
+      act: (t) async => settle(t),
+    );
   });
 
   testWidgets('hold sheet 3 digits', (t) async {
-    await shoot(t, 'hold_sheet_3digits', HoldScreen(bucketId: 'b_basmati', request: basmatiReq(), initialPin: '123'),
-        overrides: holdOv(), act: (t) async => settle(t));
+    await shoot(
+      t,
+      'hold_sheet_3digits',
+      HoldScreen(bucketId: 'b_basmati', request: basmatiReq(), initialPin: '123'),
+      overrides: holdOv(),
+      act: (t) async => settle(t),
+    );
   });
 
   testWidgets('hold pin error', (t) async {
@@ -297,65 +452,184 @@ void main() {
           : passThrough(req, fb),
       overrides: holdOv(),
     );
-    await shoot(t, 'hold_pin_error', screen, act: (t) async {
-      await settle(t, ms: 300);
-      for (var i = 0; i < 4; i++) {
-        await t.tap(find.bySemanticsLabel('Digit 0'));
-        await t.pump(const Duration(milliseconds: 50));
-      }
-      await t.tap(find.bySemanticsLabel('Authorize hold'));
-      await settle(t, ms: 500);
-    });
+    await shoot(
+      t,
+      'hold_pin_error',
+      screen,
+      act: (t) async {
+        await settle(t, ms: 300);
+        for (var i = 0; i < 4; i++) {
+          await t.tap(find.bySemanticsLabel('Digit 0'));
+          await t.pump(const Duration(milliseconds: 50));
+        }
+        await t.tap(find.bySemanticsLabel('Authorize hold'));
+        await settle(t, ms: 500);
+      },
+    );
   });
 
   testWidgets('hold success', (t) async {
-    await shoot(t, 'hold_success', HoldScreen(bucketId: 'b_basmati', request: basmatiReq()), overrides: holdOv(),
-        act: (t) async {
-      await settle(t, ms: 300);
-      for (final d in '482915'.split('')) {
-        await t.tap(find.bySemanticsLabel('Digit $d'));
-        await t.pump(const Duration(milliseconds: 50));
-      }
-      await settle(t, ms: 1500);
-    });
+    await shoot(
+      t,
+      'hold_success',
+      HoldScreen(bucketId: 'b_basmati', request: basmatiReq()),
+      overrides: holdOv(),
+      act: (t) async {
+        await settle(t, ms: 300);
+        for (final d in '482915'.split('')) {
+          await t.tap(find.bySemanticsLabel('Digit $d'));
+          await t.pump(const Duration(milliseconds: 50));
+        }
+        await settle(t, ms: 1500);
+      },
+    );
+  });
+
+  testWidgets('hold success, bucket locks while open', (t) async {
+    await shoot(
+      t,
+      'hold_success_locked',
+      HoldScreen(bucketId: 'b_basmati', request: basmatiReq()),
+      overrides: {...holdOv(), '/api/buckets/b_basmati': basmatiLocked()},
+      act: enterPin,
+    );
+  });
+
+  testWidgets('hold success 360', (t) async {
+    await shoot(
+      t,
+      'hold_success_360',
+      HoldScreen(bucketId: 'b_basmati', request: basmatiReq()),
+      overrides: holdOv(),
+      act: (t) async {
+        await small(t);
+        await enterPin(t);
+      },
+    );
+  });
+
+  testWidgets('hold sheet 360', (t) async {
+    await shoot(
+      t,
+      'hold_sheet_360',
+      HoldScreen(bucketId: 'b_basmati', request: basmatiReq(), initialPin: '12'),
+      overrides: holdOv(),
+      act: (t) async {
+        await small(t);
+        await settle(t);
+      },
+    );
   });
 
   testWidgets('seer hold sheet', (t) async {
     final v = BucketView.fromJson(bucketFx('b_seer', closesIn: const Duration(hours: 2, minutes: 40)));
     final share = {
-      ...pendingShare(680), 'bucketId': 'b_seer', 'qty': 1, 'qtyLabel': 'Steak 2', 'unitIds': ['s2'], 'options': {'cut': 'Curry cut'},
+      ...pendingShare(680),
+      'bucketId': 'b_seer',
+      'qty': 1,
+      'qtyLabel': 'Steak 2',
+      'unitIds': ['s2'],
+      'options': {'cut': 'Curry cut'},
     };
     await shoot(
       t,
       'hold_sheet_seer',
-      HoldScreen(bucketId: 'b_seer', request: HoldRequest(view: v, draft: const JoinDraft(unitIds: ['s2'], options: {'cut': 'Curry cut'}))),
-      overrides: {'POST /api/buckets/b_seer/shares': {'share': share, 'bucket': bucketFx('b_seer')}},
+      HoldScreen(
+        bucketId: 'b_seer',
+        request: HoldRequest(
+          view: v,
+          draft: const JoinDraft(unitIds: ['s2'], options: {'cut': 'Curry cut'}),
+        ),
+      ),
+      overrides: {
+        'POST /api/buckets/b_seer/shares': {'share': share, 'bucket': bucketFx('b_seer')},
+      },
       act: (t) async => settle(t),
     );
   });
 
-  testWidgets('paarai booked', (t) async {
-    final j = bucketFx('b_paarai', closesIn: const Duration(hours: 19));
-    final after = jsonDecode(jsonEncode(j)) as Map<String, dynamic>;
-    final units = (after['units'] as List).cast<Map<String, dynamic>>();
-    units[1] = {...units[1], 'owner': me()};
-    final mine = {
-      'id': 's_mine', 'bucketId': 'b_paarai', 'user': me(), 'qty': 1, 'qtyLabel': 'Tail half', 'unitIds': ['tail_half'],
-      'items': null, 'options': {'cut': 'Fry slices'}, 'payMode': 'at_market', 'status': 'booked', 'estAmount': 700,
-      'finalAmount': null, 'hold': null, 'otp': null,
-    };
-    after['shares'] = [...(after['shares'] as List), mine];
-    after['myShare'] = mine;
-    after['progress'] = {...(after['progress'] as Map), 'filled': 2, 'members': 2, 'percent': 100};
-    await shoot(
-      t,
-      'hold_booked_paarai',
-      HoldScreen(
-        bucketId: 'b_paarai',
-        request: HoldRequest(view: BucketView.fromJson(j), draft: const JoinDraft(unitIds: ['tail_half'], options: {'cut': 'Fry slices'})),
-      ),
-      overrides: {'POST /api/buckets/b_paarai/shares': {'share': mine, 'bucket': after}},
-      act: (t) async => settle(t),
-    );
+  for (final narrow in [false, true]) {
+    testWidgets('paarai booked${narrow ? ' 360' : ''}', (t) async {
+      final j = bucketFx('b_paarai', closesIn: const Duration(hours: 19));
+      final after = jsonDecode(jsonEncode(j)) as Map<String, dynamic>;
+      final units = (after['units'] as List).cast<Map<String, dynamic>>();
+      units[1] = {...units[1], 'owner': me()};
+      final mine = {
+        'id': 's_mine',
+        'bucketId': 'b_paarai',
+        'user': me(),
+        'qty': 1,
+        'qtyLabel': 'Tail half',
+        'unitIds': ['tail_half'],
+        'items': null,
+        'options': {'cut': 'Fry slices'},
+        'payMode': 'at_market',
+        'status': 'booked',
+        'estAmount': 700,
+        'finalAmount': null,
+        'hold': null,
+        'otp': null,
+      };
+      after['shares'] = [...(after['shares'] as List), mine];
+      after['myShare'] = mine;
+      after['progress'] = {...(after['progress'] as Map), 'filled': 2, 'members': 2, 'percent': 100};
+      await shoot(
+        t,
+        narrow ? 'hold_booked_paarai_360' : 'hold_booked_paarai',
+        HoldScreen(
+          bucketId: 'b_paarai',
+          request: HoldRequest(
+            view: BucketView.fromJson(j),
+            draft: const JoinDraft(unitIds: ['tail_half'], options: {'cut': 'Fry slices'}),
+          ),
+        ),
+        overrides: {
+          'POST /api/buckets/b_paarai/shares': {'share': mine, 'bucket': after},
+        },
+        act: (t) async {
+          if (narrow) await small(t);
+          await settle(t);
+        },
+      );
+    });
+  }
+
+  // ---- 360×800 (QA device) -------------------------------------------------------------
+
+  for (final (id, closes) in [
+    ('b_seer', const Duration(hours: 2, minutes: 40)),
+    ('b_goat', const Duration(days: 1, hours: 18)),
+    ('b_basmati', const Duration(hours: 17)),
+    ('b_alphonso', const Duration(hours: 20)),
+    ('b_pest', const Duration(days: 2, hours: 4)),
+    ('b_trip', const Duration(hours: 9)),
+    ('b_paarai', const Duration(days: 1, hours: 19)),
+  ]) {
+    final name = id.substring(2);
+    testWidgets('$name 360 top', (t) async {
+      await shoot(
+        t,
+        'detail_${name}_360',
+        BucketDetailScreen(bucketId: id),
+        overrides: detailOv(id, bucketFx(id, closesIn: closes)),
+        act: small,
+      );
+    });
+    testWidgets('$name 360 module', (t) async {
+      await shoot(
+        t,
+        'detail_${name}_360_mid',
+        BucketDetailScreen(bucketId: id),
+        overrides: detailOv(id, bucketFx(id, closesIn: closes)),
+        act: (t) async {
+          await small(t);
+          await scrollDown(t, 480);
+        },
+      );
+    });
+  }
+
+  testWidgets('prawns 360', (t) async {
+    await shoot(t, 'detail_prawns_completed_360', const BucketDetailScreen(bucketId: 'b_past_prawns'), act: small);
   });
 }

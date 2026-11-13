@@ -337,7 +337,7 @@ class _CountdownBuilderState extends State<CountdownBuilder> {
 /// `Closes in 2h 15m` / `Closes Sat 8:00 pm`.
 String closesText(DateTime cutoff, Duration left) {
   if (left.isNegative) return 'Closing now';
-  if (left.inHours >= 24) return 'Closes ${whenText(cutoff)}';
+  if (left.inHours >= 24) return 'Closes ${shortWhen(cutoff)}';
   return 'Closes in ${Fmt.timeLeft(cutoff).replaceAll(' left', '')}';
 }
 

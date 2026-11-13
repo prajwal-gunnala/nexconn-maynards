@@ -32,9 +32,17 @@ class HeroChip extends StatelessWidget {
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         Icon(icon, size: 16, color: urgent ? Colors.white : AppColors.brandDeep),
         const SizedBox(width: 6),
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 250),
-          child: Text(label, key: ValueKey(label), style: AppText.label.copyWith(color: fg, fontWeight: FontWeight.w700).tab),
+        Flexible(
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 250),
+            child: Text(
+              label,
+              key: ValueKey(label),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppText.label.copyWith(color: fg, fontWeight: FontWeight.w700).tab,
+            ),
+          ),
         ),
       ]),
     );
@@ -177,22 +185,33 @@ class SpecStrip extends StatelessWidget {
     };
     if (facts.isEmpty) return const SizedBox.shrink();
     return Container(
-      height: 48,
+      constraints: const BoxConstraints(minHeight: 48),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       decoration: BoxDecoration(color: AppColors.canvas, borderRadius: BorderRadius.circular(12)),
-      child: Row(children: [
-        for (var i = 0; i < facts.length; i++) ...[
-          if (i > 0) Container(width: 1, height: 20, color: AppColors.line),
-          Expanded(
-            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Icon(facts[i].$1, size: 18, color: AppColors.inkMuted),
-              const SizedBox(width: 6),
-              Flexible(
-                child: Text(facts[i].$2, style: AppText.label.copyWith(fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
+      child: IntrinsicHeight(
+        child: Row(children: [
+          for (var i = 0; i < facts.length; i++) ...[
+            if (i > 0) Center(child: Container(width: 1, height: 20, color: AppColors.line)),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  Icon(facts[i].$1, size: 18, color: AppColors.inkMuted),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      facts[i].$2,
+                      style: AppText.label.copyWith(fontWeight: FontWeight.w600, height: 1.25),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ]),
               ),
-            ]),
-          ),
-        ],
-      ]),
+            ),
+          ],
+        ]),
+      ),
     );
   }
 }
@@ -696,15 +715,14 @@ class DetailCta extends StatelessWidget {
       }
       strip = my.payMode == PayMode.atMarket
           ? 'Booked · leave any time before the cutoff'
-          : 'Held, not paid · released automatically if it doesn\'t fill';
+          : 'Held, not paid · released if it doesn\'t fill';
     } else {
       final amount = pr.quote(draft);
       final saving = draft.isEmpty ? 0 : pr.savingOf(draft);
       final empty = draft.isEmpty || amount <= 0;
       final pickHint = switch (b.type) {
-        BucketType.split when atMarket => 'Pick a $unit to book',
-        BucketType.split => isPart(b) ? 'Pick a cut to hold' : 'Pick a $unit to hold',
-        BucketType.trip => 'Add items to hold',
+        BucketType.split => isPart(b) ? 'Pick a cut first' : 'Pick a $unit first',
+        BucketType.trip => 'Add items first',
         _ => 'Choose a quantity',
       };
       final fromPrice = b.units.isEmpty ? null : b.units.map((u) => u.price).reduce(math.min);
@@ -728,7 +746,7 @@ class DetailCta extends StatelessWidget {
           : AppButton(label: label, icon: atMarket ? Icons.event_available_rounded : Icons.lock_outline_rounded, onPressed: onJoin);
       strip = atMarket
           ? 'No prepayment · pay ${b.vendor?.name.split(' ').first ?? 'the vendor'} when you meet'
-          : _finalPriceLine(view, draft) ?? 'Held, not paid · released automatically if it doesn\'t fill';
+          : _finalPriceLine(view, draft) ?? 'Held, not paid · released if it doesn\'t fill';
       if (atMarket) {
         stripFg = AppColors.brandDeep;
         stripBg = AppColors.brandTint;

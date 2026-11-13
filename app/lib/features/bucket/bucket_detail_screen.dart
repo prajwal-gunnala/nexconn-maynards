@@ -98,12 +98,20 @@ class _BucketDetailScreenState extends State<BucketDetailScreen> {
     };
   }
 
-  /// Drops picked parts that a neighbour took meanwhile.
+  /// Drops picked parts that a neighbour took meanwhile. Parts that are now
+  /// mine (I just held or booked them) are cleared quietly.
   JoinDraft _pruneDraft(BucketView v, JoinDraft d) {
     if (d.unitIds.isEmpty) return d;
+    final meId = context.read<SessionStore>().user?.id;
+    final my = v.bucket.myShare;
+    final mineIds = {
+      ...?(my != null && !const {ShareStatus.left, ShareStatus.released}.contains(my.status) ? my.unitIds : null),
+      ...v.bucket.units.where((u) => u.owner != null && u.owner!.id == meId).map((u) => u.id),
+    };
     final open = v.bucket.units.where((u) => u.isOpen).map((u) => u.id).toSet();
     final kept = d.unitIds.where(open.contains).toList();
-    if (kept.length != d.unitIds.length && mounted) {
+    final takenByOthers = d.unitIds.where((id) => !open.contains(id) && !mineIds.contains(id));
+    if (takenByOthers.isNotEmpty && mounted) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _snack('A neighbour just took one of your picks.');
       });
@@ -527,18 +535,22 @@ class HeroAppBar extends StatelessWidget {
               bottom: AppSpace.lg,
               child: Row(children: [
                 HeroChip(icon: typeIcon(b.type), label: typeLabel(b)),
-                const Spacer(),
-                if (b.status == BucketStatus.live && b.cutoffAt != null)
-                  CountdownBuilder(
-                    cutoff: b.cutoffAt!,
-                    builder: (_, left) => HeroChip(
-                      icon: Icons.schedule_rounded,
-                      label: closesText(b.cutoffAt!, left),
-                      urgent: left.inHours < 3,
-                    ),
-                  )
-                else
-                  ClosedPill(status: b.status),
+                const SizedBox(width: AppSpace.sm),
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: b.status == BucketStatus.live && b.cutoffAt != null
+                        ? CountdownBuilder(
+                            cutoff: b.cutoffAt!,
+                            builder: (_, left) => HeroChip(
+                              icon: Icons.schedule_rounded,
+                              label: closesText(b.cutoffAt!, left),
+                              urgent: left.inHours < 3,
+                            ),
+                          )
+                        : ClosedPill(status: b.status),
+                  ),
+                ),
               ]),
             ),
           ]),

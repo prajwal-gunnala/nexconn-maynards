@@ -1,18 +1,22 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/api/api_client.dart';
 import '../../core/format.dart';
 import '../../core/models/models.dart';
+import '../../core/nexconn/nexconn_service.dart';
 import '../../core/session/session_store.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/tokens.dart';
 import '../../widgets/widgets.dart';
 import '../bucket/bucket_detail_screen.dart' show inviteText, meetPeople;
 import '../bucket/detail_meet.dart';
+import '../chat/chat_directory.dart' show ChatDirectory;
 import '../bucket/detail_model.dart';
 import '../bucket/detail_widgets.dart';
 
@@ -84,7 +88,7 @@ class _TickPainter extends CustomPainter {
 }
 
 /// "₹960 held" confirmation with what happens next and an invite nudge.
-class HoldSuccessView extends StatelessWidget {
+class HoldSuccessView extends StatefulWidget {
   const HoldSuccessView({super.key, required this.view, required this.share, required this.vpa});
 
   final BucketView view;
@@ -92,12 +96,73 @@ class HoldSuccessView extends StatelessWidget {
   final String vpa;
 
   @override
+  State<HoldSuccessView> createState() => _HoldSuccessViewState();
+}
+
+/// Keeps the page live: the bucket can fill (and lock into an order) while the
+/// member is still looking at it.
+class _HoldSuccessViewState extends State<HoldSuccessView> {
+  late BucketView view = widget.view;
+  late Share share = widget.share;
+  StreamSubscription<MetadataUpdate>? _sub;
+  Timer? _poll;
+  bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final msg = view.bucket.cardMessageId;
+    if (msg != null) {
+      try {
+        _sub = context.read<NexconnService>().watchMetadata(msg).listen((_) => _refresh(), onError: (_) {});
+      } catch (_) {
+        // No chat engine: the poll below still catches the lock.
+      }
+    }
+    _poll = Timer.periodic(const Duration(seconds: 15), (_) {
+      if (view.bucket.status == BucketStatus.live) _refresh();
+    });
+    _refresh();
+  }
+
+  @override
+  void dispose() {
+    _sub?.cancel();
+    _poll?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _refresh() async {
+    if (_loading) return;
+    _loading = true;
+    try {
+      final raw = await context.read<ApiClient>().get('/api/buckets/${view.bucket.id}');
+      if (!mounted) return;
+      final v = BucketView.fromJson(asJson(raw) ?? const {});
+      if (v.bucket.id.isEmpty) return;
+      setState(() {
+        view = v;
+        final my = v.bucket.myShare;
+        if (my != null && my.id == share.id) share = my;
+      });
+    } catch (_) {
+      // Keep what we have; the next tick retries.
+    } finally {
+      _loading = false;
+    }
+  }
+
+  String get vpa => widget.vpa;
+
+  @override
   Widget build(BuildContext context) {
     final b = view.bucket;
     final p = b.progress;
     final unit = b.unitLabel ?? 'share';
-    final amount = share.hold?.amount ?? share.estAmount;
+    final paid = share.hold?.status == HoldStatus.captured;
+    final amount = paid ? (share.finalAmount ?? share.hold?.amount ?? share.estAmount) : (share.hold?.amount ?? share.estAmount);
     final filled = b.status != BucketStatus.live;
+    final market = b.status == BucketStatus.marketDay;
     final left = math.max(0, p.target - p.filled);
     final next = p.nextTier;
 
@@ -124,7 +189,7 @@ class HoldSuccessView extends StatelessWidget {
       goSub = 'Invite neighbours so everyone pays ${Fmt.rupees(next.unitPrice)}/$unit. Your hold drops with it.';
     } else if (b.type == BucketType.split) {
       goTitle = '${plural(left, unit)} to go';
-      goSub = 'The fish is cut once every part is taken. Invite neighbours to fill it faster.';
+      goSub = '${splitPromise(b)} Invite neighbours to fill it faster.';
     } else if (b.type == BucketType.trip) {
       goTitle = '${fmtQty(left)} kg of space left';
       goSub = 'More on the tempo means a smaller transport share for everyone.';
@@ -146,20 +211,32 @@ class HoldSuccessView extends StatelessWidget {
         child: ListView(padding: const EdgeInsets.fromLTRB(AppSpace.gutter, AppSpace.xxl, AppSpace.gutter, AppSpace.xxl), children: [
           const Center(child: AnimatedCheck()),
           const SizedBox(height: AppSpace.lg),
-          Center(child: Text('${Fmt.rupees(amount)} held', style: AppText.display.copyWith(fontSize: 32).tab)),
+          Center(child: LiveText('${Fmt.rupees(amount)} ${paid ? 'paid' : 'held'}', style: AppText.display.copyWith(fontSize: 32))),
           const SizedBox(height: AppSpace.xs),
-          Center(child: Text('${b.title} · $status', style: AppText.bodyMuted, textAlign: TextAlign.center)),
-          const SizedBox(height: AppSpace.xs),
-          const SizedBox(height: AppSpace.sm),
           Center(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(color: AppColors.heldTint, borderRadius: BorderRadius.circular(AppRadius.chip)),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                const Icon(Icons.lock_clock_outlined, size: 16, color: AppColors.held),
-                const SizedBox(width: 6),
-                Text('Held in your bank · not paid yet', style: AppText.label.copyWith(color: AppColors.held, fontWeight: FontWeight.w600)),
-              ]),
+            child: LiveText(
+              filled ? '${b.title} · bucket full' : '${b.title} · $status',
+              style: AppText.bodyMuted,
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(height: AppSpace.md),
+          Center(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              child: Container(
+                key: ValueKey(paid),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(color: paid ? AppColors.saveTint : AppColors.heldTint, borderRadius: BorderRadius.circular(AppRadius.chip)),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(paid ? Icons.check_circle_outline_rounded : Icons.lock_clock_outlined, size: 16, color: paid ? AppColors.save : AppColors.held),
+                  const SizedBox(width: 6),
+                  Text(
+                    paid ? 'Paid at the final price' : 'Held in your bank · not paid yet',
+                    style: AppText.label.copyWith(color: paid ? AppColors.save : AppColors.held, fontWeight: FontWeight.w600),
+                  ),
+                ]),
+              ),
             ),
           ),
           const SizedBox(height: AppSpace.xxl),
@@ -168,8 +245,8 @@ class HoldSuccessView extends StatelessWidget {
               TimelineStep(done: true, nextDone: filled, title: 'Held in your bank', sub: 'Just now · from $vpa'),
               TimelineStep(
                 n: '2',
-                title: filled ? 'Bucket full, order sent' : 'Bucket closes',
-                sub: filled ? 'Order ${b.orderId ?? ''} · charged at the final price' : closesSub,
+                title: filled ? 'Bucket full · order placed' : 'Bucket closes',
+                sub: filled ? 'Order ${b.orderId ?? ''} · ${market ? 'pay at the stall' : 'charged at the final price'}' : closesSub,
                 done: filled,
               ),
               TimelineStep(n: '3', title: deliverTitle, sub: deliverSub, last: true),
@@ -210,10 +287,37 @@ class HoldSuccessView extends StatelessWidget {
             DetailCard(
               color: AppColors.saveTint,
               borderColor: Colors.transparent,
-              child: Row(children: [
-                const Icon(Icons.celebration_outlined, color: AppColors.save),
-                const SizedBox(width: AppSpace.md),
-                Expanded(child: Text('Your share filled the bucket. Everyone is charged the final price now.', style: AppText.label)),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Row(children: [
+                  const Icon(Icons.celebration_outlined, color: AppColors.save),
+                  const SizedBox(width: AppSpace.sm),
+                  Expanded(child: Text('Bucket full · order placed', style: AppText.heading.copyWith(color: const Color(0xFF0B7A3B)))),
+                ]),
+                const SizedBox(height: AppSpace.xs),
+                Text(
+                  'Order ${b.orderId ?? ''} is with ${b.vendor?.name ?? 'the vendor'}. '
+                  '${paid && (share.hold?.amount ?? 0) > amount ? '${Fmt.rupees((share.hold?.amount ?? 0) - amount)} of your hold went back to you. ' : ''}'
+                  'Everyone pays the final price.',
+                  style: AppText.body.copyWith(color: AppColors.ink.withValues(alpha: 0.8)),
+                ),
+                if (b.orderId != null) ...[
+                  const SizedBox(height: AppSpace.md),
+                  SizedBox(
+                    height: 48,
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => context.push('/orders/${b.orderId}'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF0B7A3B),
+                        backgroundColor: AppColors.surface,
+                        side: const BorderSide(color: AppColors.save, width: 1.5),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                      icon: const Icon(Icons.receipt_long_outlined, size: 20),
+                      label: Text('View order ${b.orderId}', style: AppText.label.copyWith(color: const Color(0xFF0B7A3B), fontWeight: FontWeight.w700)),
+                    ),
+                  ),
+                ],
               ]),
             ),
         ]),
@@ -240,6 +344,17 @@ class HoldSuccessView extends StatelessWidget {
       ),
     );
   }
+}
+
+/// "Al-Noor cuts it once all 7 shares are taken." / "... once both halves are taken."
+String splitPromise(Bucket b) {
+  final unit = b.unitLabel ?? 'part';
+  final n = b.units.length;
+  final who = b.vendor?.name.split(' ').first ?? 'The vendor';
+  final cat = (b.category ?? '').toLowerCase();
+  final verb = cat == 'fish' || cat == 'meat' ? 'cuts it' : 'packs it';
+  final all = n == 2 ? 'both ${pluralWord(unit)}' : 'all $n ${pluralWord(unit)}';
+  return '$who $verb once $all are taken.';
 }
 
 /// One row of a vertical timeline (✓ done, or a numbered circle).
@@ -397,7 +512,9 @@ class BookedView extends StatelessWidget {
               child: AppButton.ghost(
                 label: 'Message',
                 icon: Icons.chat_bubble_outline_rounded,
-                onPressed: () => context.push('/chat/group/$chat?title=${Uri.encodeComponent(session.community?.name ?? 'Street')}'),
+                onPressed: () => context.push(
+                  '/chat/group/$chat?title=${Uri.encodeComponent(ChatDirectory.streetTitle(session.community?.name ?? ''))}',
+                ),
               ),
             ),
             const SizedBox(width: AppSpace.md),
