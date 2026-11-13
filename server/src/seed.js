@@ -2,7 +2,7 @@
 // built through the real service code so every amount, hold and order is consistent.
 import { Store, emptyDb } from './store.js';
 import { JugaadService } from './service.js';
-import { BOT_ID, BOT_NAME, createNexconn, streetGroupId } from './nexconn.js';
+import { BOT_ID, BOT_NAME, bucketGroupId, createNexconn, streetGroupId } from './nexconn.js';
 
 const IST = 330 * 60_000;
 const MIN = 60_000;
@@ -62,7 +62,7 @@ const COMMUNITIES = [
     id: 'c_seabreeze', name: 'Sea Breeze Towers', kind: 'society', area: 'OMR, Thoraipakkam', city: 'Chennai', flats: 412,
     image: 'seabreeze', baseMembers: 248, baseSavedThisMonth: 38650,
     pendingVendors: [
-      { id: 'pv_kumar', name: 'Kumar Organic Greens', category: 'veg', place: 'Thiruporur', note: 'Pesticide-free greens, twice a week' },
+      { id: 'pv_kumar', name: 'Kumar Organic Greens', category: 'veg', place: 'Thiruporur', note: 'Leafy greens from a Thiruporur farm, twice a week' },
       { id: 'pv_amma', name: "Amma's Podi & Pickles", category: 'home foods', place: 'Velachery', note: 'Home kitchen, FSSAI registered' },
     ],
   },
@@ -296,13 +296,16 @@ export async function seedNexconn(data, nx, { logger = console, oldData = null }
   if (!nx.enabled) { logger.warn('[seed] Nexconn disabled, skipping chat setup'); return summary; }
   const store = new Store(null, data);
 
-  // Mark cards from a previous seed as cancelled so the old chat history doesn't look live.
-  for (const b of Object.values(oldData?.buckets ?? {})) {
-    if (b.cardMessageId && b.status === 'live') {
-      await nx.call('/v4/channel-type/message/metadata/set', {
-        messageId: b.cardMessageId, userId: BOT_ID, channelType: 3, channelId: streetGroupId(b.communityId), metadata: { s: 'cancelled' },
-      }).catch(() => {});
-    }
+  // Start every seed with clean chats: dismiss the previous Street and bucket groups so no old cards, claims or
+  // duplicate events from earlier runs show up (Nexconn keeps group history otherwise). They are recreated below.
+  const oldGroups = new Set([
+    ...Object.keys(oldData?.communities ?? {}).map((id) => streetGroupId(id)),
+    ...Object.keys(data.communities ?? {}).map((id) => streetGroupId(id)),
+    ...Object.values(oldData?.buckets ?? {}).filter((b) => b.orderId || b.status !== 'live').map((b) => bucketGroupId(b.id)),
+    ...Object.keys(data.buckets ?? {}).map((id) => bucketGroupId(id)),
+  ]);
+  for (const channelId of oldGroups) {
+    await nx.call('/v4/group-channel/dismiss', { channelId }).catch(() => {});
   }
 
   const users = [{ id: BOT_ID, name: BOT_NAME }, ...Object.values(data.users)];
