@@ -9,6 +9,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/theme/tokens.dart';
 import 'money_ui.dart';
 import 'order_view.dart';
+import 'time_fmt.dart';
 
 /// My orders: buckets that filled. Active (on the way) and Past (delivered).
 class OrdersScreen extends StatefulWidget {
@@ -235,7 +236,7 @@ class OrderCard extends StatelessWidget {
                     child: Text(
                       [
                         if (o.pickupPoint != null && o.pickupPoint!.isNotEmpty) (o.atMarket ? 'Meet at ${o.pickupPoint}' : 'Pickup at ${o.pickupPoint}'),
-                        if (o.window != null && o.window!.isNotEmpty) o.window!,
+                        if (pickupLine(window: o.window, place: o.pickupPoint).isNotEmpty) pickupLine(window: o.window, place: o.pickupPoint),
                       ].join(' · '),
                       style: AppText.caption.copyWith(color: AppColors.ink),
                       maxLines: 1,

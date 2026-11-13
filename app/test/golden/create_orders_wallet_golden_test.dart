@@ -73,7 +73,7 @@ final _riceLines = [
 final Map<String, Object?> _riceOrder = {
   'id': 'JS-2043', 'bucketId': 'b_basmati', 'communityId': 'c_seabreeze', 'vendorId': 'v_balaji',
   'title': 'Aged Basmati Rice (1121)', 'image': 'basmati', 'total': 9152, 'heldTotal': 9152, 'atPickupTotal': 0,
-  'status': 'packed', 'createdAt': '2026-11-12T14:30:00.000Z', 'pickupPoint': 'Clubhouse', 'window': 'Sun 10:00–11:00 am',
+  'status': 'packed', 'createdAt': '2026-11-13T14:30:00.000Z', 'pickupPoint': 'Clubhouse', 'window': 'Sat 10:00 am–12:00 pm',
   'lines': _riceLines, 'myLine': {..._riceLines.first, 'heldAmount': 960},
 };
 
@@ -86,7 +86,7 @@ final _fishLines = [
 final Map<String, Object?> _fishOrder = {
   'id': 'JS-2044', 'bucketId': 'b_paarai', 'communityId': 'c_seabreeze', 'vendorId': 'v_murugan',
   'title': 'Kasimedu Book & Meet: Whole Paarai', 'image': 'paarai', 'total': 1460, 'heldTotal': 0, 'atPickupTotal': 1460,
-  'status': 'created', 'createdAt': '2026-11-14T16:30:00.000Z', 'pickupPoint': 'Gate 3', 'window': 'Sun 6:00–7:00 am',
+  'status': 'created', 'createdAt': '2026-11-14T16:30:00.000Z', 'pickupPoint': 'Gate 3', 'window': 'Sun 6:00 am at Gate 3',
   'lines': _fishLines, 'myLine': _fishLines.last,
 };
 

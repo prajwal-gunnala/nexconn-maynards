@@ -2,12 +2,12 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../../core/format.dart';
 import '../../core/models/models.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/tokens.dart';
 import '../../widgets/widgets.dart';
 import '../bucket/bucket_visuals.dart';
+import '../orders/time_fmt.dart';
 
 /// "Posted to your Street chat": a drawn check, the new card in brief, then [onDone]
 /// fires on its own after a short beat (or straight away from the button).
@@ -133,14 +133,14 @@ class _PostSuccessState extends State<PostSuccess> with SingleTickerProviderStat
                                         Text(b.title, style: AppText.heading, maxLines: 2, overflow: TextOverflow.ellipsis),
                                         const SizedBox(height: 4),
                                         Text(
-                                          [goal, if (b.cutoffAt != null) 'closes ${Fmt.dayTime(b.cutoffAt!)}'].join(' · '),
+                                          [goal, if (b.cutoffAt != null) 'closes ${shortDayTimeR(b.cutoffAt!)}'].join(' · '),
                                           style: AppText.caption,
                                         ),
+                                        const SizedBox(height: 6),
+                                        const StatusPill('Live in the chat', tone: PillTone.brand),
                                       ],
                                     ),
                                   ),
-                                  const SizedBox(width: AppSpace.sm),
-                                  const StatusPill('Live', tone: PillTone.brand),
                                 ],
                               ),
                             ),

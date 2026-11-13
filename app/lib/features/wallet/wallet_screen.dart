@@ -8,7 +8,9 @@ import '../../core/models/models.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/tokens.dart';
 import '../../widgets/widgets.dart';
+import '../../core/session/session_store.dart';
 import '../orders/money_ui.dart';
+import '../orders/order_view.dart';
 
 /// Wallet tab: savings hero, held / paid / released tiles, filterable money history.
 class WalletScreen extends StatefulWidget {
@@ -36,6 +38,9 @@ enum _Filter {
 class _WalletScreenState extends State<WalletScreen> {
   Wallet? _wallet;
   String? _error;
+
+  /// My line per order id, to explain price drops ("Price dropped to ₹88/kg").
+  Map<String, MemberLine> _myLines = const {};
   _Filter _filter = _Filter.all;
 
   DateTime get _now => widget.clock?.call() ?? DateTime.now();
@@ -47,16 +52,35 @@ class _WalletScreenState extends State<WalletScreen> {
   }
 
   Future<void> _load() async {
+    final api = context.read<ApiClient>();
+    final me = context.read<SessionStore>().user?.id;
     try {
-      final w = await context.read<ApiClient>().wallet();
+      final orders = _myOrderLines(api, me);
+      final w = await api.wallet();
+      final lines = await orders;
       if (!mounted) return;
       setState(() {
         _wallet = w;
+        _myLines = lines;
         _error = null;
       });
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _error = e.message);
+    }
+  }
+
+  /// Orders are optional here: without them the wallet still renders, just with less detail.
+  static Future<Map<String, MemberLine>> _myOrderLines(ApiClient api, String? me) async {
+    try {
+      final data = await api.get('/api/me/orders');
+      if (data is! List) return const {};
+      return {
+        for (final m in data.whereType<Map>())
+          if (OrderView.fromJson(m.cast<String, dynamic>(), meId: me) case final o when o.myLine != null) o.id: o.myLine!,
+      };
+    } on ApiException {
+      return const {};
     }
   }
 
@@ -84,6 +108,13 @@ class _WalletScreenState extends State<WalletScreen> {
     final shown = _filter.kind == null ? entries : entries.where((e) => e.kind == _filter.kind).toList();
     bool thisMonth(WalletEntry e) => e.at != null && e.at!.toLocal().year == now.year && e.at!.toLocal().month == now.month;
     int count(String kind, {bool month = false}) => entries.where((e) => e.kind == kind && (!month || thisMonth(e))).length;
+    // Tiles add up the same history the list shows (this year), so the numbers always agree.
+    // "Released" includes the part of a hold given back when the price dropped.
+    final year = entries.where((e) => e.at == null || e.at!.toLocal().year == now.year).toList();
+    final paidTotal = year.where((e) => e.kind == 'paid').fold<int>(0, (a, e) => a + e.amount);
+    final paidCount = year.where((e) => e.kind == 'paid').length;
+    final refunds = year.where((e) => e.kind == 'released' || _backToBank(e) > 0).toList();
+    final releasedTotal = refunds.fold<int>(0, (a, e) => a + (e.kind == 'released' ? e.amount : _backToBank(e)));
     final savedBuckets = entries.where((e) => asInt(e.raw['savings']) > 0).map((e) => e.bucketId ?? e.id).toSet().length;
 
     return ListView(
@@ -102,13 +133,13 @@ class _WalletScreenState extends State<WalletScreen> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpace.gutter),
           child: Row(children: [
-            Expanded(child: _Tile(label: 'Held now', amount: w.heldNow, note: _buckets(count('held')), tone: PillTone.held, icon: Icons.lock_clock_outlined)),
+            Expanded(child: _Tile(label: 'Held', amount: w.heldNow, note: _buckets(count('held')), tone: PillTone.held, icon: Icons.lock_clock_outlined)),
             const SizedBox(width: AppSpace.sm),
             Expanded(
               child: _Tile(
-                label: 'Paid this month',
-                amount: w.paidThisMonth,
-                note: _buckets(count('paid', month: true) + count('at_market', month: true)),
+                label: 'Paid',
+                amount: paidTotal,
+                note: _buckets(paidCount),
                 tone: PillTone.captured,
                 icon: Icons.check_circle_outline,
               ),
@@ -117,8 +148,8 @@ class _WalletScreenState extends State<WalletScreen> {
             Expanded(
               child: _Tile(
                 label: 'Released',
-                amount: w.releasedThisMonth,
-                note: 'back to you',
+                amount: releasedTotal,
+                note: refunds.isEmpty ? 'none' : '${refunds.length} back to bank',
                 tone: PillTone.released,
                 icon: Icons.undo_rounded,
               ),
@@ -142,7 +173,7 @@ class _WalletScreenState extends State<WalletScreen> {
           height: 48,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: AppSpace.gutter),
+            padding: const EdgeInsets.fromLTRB(AppSpace.gutter, 0, AppSpace.gutter + AppSpace.lg, 0),
             itemCount: _Filter.values.length,
             separatorBuilder: (_, _) => const SizedBox(width: AppSpace.sm),
             itemBuilder: (_, i) {
@@ -163,9 +194,9 @@ class _WalletScreenState extends State<WalletScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 14),
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: on ? AppColors.ink : AppColors.surface,
+                        color: on ? AppColors.brand : AppColors.surface,
                         borderRadius: BorderRadius.circular(AppRadius.chip),
-                        border: Border.all(color: on ? AppColors.ink : AppColors.line),
+                        border: Border.all(color: on ? AppColors.brand : AppColors.line),
                       ),
                       child: Text(
                         n > 0 ? '${f.label}  $n' : f.label,
@@ -210,13 +241,19 @@ class _WalletScreenState extends State<WalletScreen> {
                   child: Column(children: [
                     for (var i = 0; i < shown.length; i++) ...[
                       if (i > 0) const Divider(),
-                      _EntryRow(entry: shown[i]),
+                      _EntryRow(entry: shown[i], myLine: _myLines[asStringOrNull(shown[i].raw['orderId'])]),
                     ],
                   ]),
                 ),
         ),
       ],
     );
+  }
+
+  /// Part of a hold given back after the bucket filled at a lower price.
+  static int _backToBank(WalletEntry e) {
+    final held = asIntOrNull(e.raw['heldAmount']);
+    return e.kind == 'paid' && held != null && held > e.amount ? held - e.amount : 0;
   }
 
   static String _buckets(int n) => n == 0 ? 'none' : '$n ${n == 1 ? 'bucket' : 'buckets'}';
@@ -250,7 +287,7 @@ class _Hero extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(AppSpace.xl, AppSpace.xl, AppSpace.xl, AppSpace.xl),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Saved with neighbours, $year', style: AppText.label.copyWith(color: Colors.white.withValues(alpha: 0.85))),
+              Text('Saved with neighbours this year', style: AppText.label.copyWith(color: Colors.white.withValues(alpha: 0.85))),
               const SizedBox(height: AppSpace.xs),
               TweenAnimationBuilder<double>(
                 tween: Tween(begin: 0, end: saved.toDouble()),
@@ -367,8 +404,21 @@ class _OrdersLink extends StatelessWidget {
 }
 
 class _EntryRow extends StatelessWidget {
-  const _EntryRow({required this.entry});
+  const _EntryRow({required this.entry, this.myLine});
   final WalletEntry entry;
+
+  /// My line in the entry's order, when known: gives the final unit price.
+  final MemberLine? myLine;
+
+  /// "₹88/kg" from "10 kg" and ₹880; null for parts like "Tail half".
+  String? get _unitPrice {
+    final l = myLine;
+    if (l == null) return null;
+    final parts = l.qtyLabel.trim().split(RegExp(r'\s+'));
+    final qty = parts.isEmpty ? null : num.tryParse(parts.first);
+    if (qty == null || qty <= 0 || parts.length < 2) return null;
+    return '${Fmt.rupees((l.amount / qty).round())}/${parts.sublist(1).join(' ')}';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -377,6 +427,7 @@ class _EntryRow extends StatelessWidget {
     final savings = asInt(e.raw['savings']);
     final heldAmount = asIntOrNull(e.raw['heldAmount']);
     final image = asStringOrNull(e.raw['image']) ?? e.title;
+    final back = e.kind == 'paid' && heldAmount != null && heldAmount > e.amount ? heldAmount - e.amount : 0;
     final pill = switch (e.kind) {
       'held' => const StatusPill('Held', tone: PillTone.held, icon: Icons.lock_clock_outlined),
       'paid' => const StatusPill('Paid', tone: PillTone.captured, icon: Icons.check_circle_outline),
@@ -412,11 +463,14 @@ class _EntryRow extends StatelessWidget {
                 Text(e.title, style: AppText.label.copyWith(fontWeight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 2),
                 Text(sub, style: AppText.caption, maxLines: 1, overflow: TextOverflow.ellipsis),
-                if (savings > 0) ...[
+                if (back > 0 || savings > 0) ...[
                   const SizedBox(height: 2),
                   Text(
-                    'Saved ${Fmt.rupees(savings)}${heldAmount != null && heldAmount > e.amount ? ' · ${Fmt.rupees(heldAmount - e.amount)} released' : ''}',
+                    back > 0
+                        ? '${_unitPrice == null ? 'Final price was lower' : 'Price dropped to $_unitPrice'} · ${Fmt.rupees(back)} back to your bank'
+                        : 'Saved ${Fmt.rupees(savings)} vs shop price',
                     style: AppText.caption.copyWith(color: AppColors.save, fontWeight: FontWeight.w600, fontFeatures: tabular),
+                    maxLines: 2,
                   ),
                 ],
               ]),

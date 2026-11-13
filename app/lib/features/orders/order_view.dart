@@ -124,6 +124,7 @@ class OrderView {
 
   /// Status pill for the order card.
   StatusPill statusPill() => switch (status) {
+        OrderStatus.created when atMarket => const StatusPill('Booked · pay at stall', tone: PillTone.brand, icon: Icons.storefront_outlined),
         OrderStatus.created => const StatusPill('Order created', tone: PillTone.brand),
         OrderStatus.sent => const StatusPill('Sent to vendor', tone: PillTone.held),
         OrderStatus.packed => const StatusPill('Packed', tone: PillTone.held, icon: Icons.inventory_2_outlined),

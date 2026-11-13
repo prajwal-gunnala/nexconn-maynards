@@ -5,6 +5,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/theme/tokens.dart';
 import '../../widgets/widgets.dart';
 import '../bucket/bucket_visuals.dart';
+import '../orders/time_fmt.dart';
 import 'bucket_draft.dart';
 
 /// What the preview needs, derived from the form on every change.
@@ -159,7 +160,7 @@ class DraftPreview extends StatelessWidget {
             if (d.cutoffAt != null) ...[
               const SizedBox(height: 4),
               Text(
-                'Cutoff ${Fmt.dayTime(d.cutoffAt!)} · ${Fmt.timeLeft(d.cutoffAt!, now: now)}',
+                'Cutoff ${dayTimeR(d.cutoffAt!)} · ${Fmt.timeLeft(d.cutoffAt!, now: now)}',
                 style: AppText.caption,
               ),
             ],

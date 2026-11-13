@@ -11,6 +11,7 @@ import '../../core/theme/tokens.dart';
 import '../../widgets/widgets.dart';
 import 'money_ui.dart';
 import 'order_view.dart';
+import 'time_fmt.dart';
 
 /// Order detail: pickup OTP, status tracker, my money, every member's line, chat link.
 class OrderScreen extends StatefulWidget {
@@ -91,8 +92,8 @@ class _OrderScreenState extends State<OrderScreen> {
       children: [
         _header(o),
         gap,
-        if (me?.otp != null) ...[_OtpCard(order: o, line: me!, vendor: b?.vendor?.name), gap],
-        if (o.atMarket) ...[_MeetCard(order: o, bucket: b), gap],
+        if (me?.otp != null) ...[_OtpCard(order: o, line: me!, vendor: b?.vendor?.name, when: _when(o, b)), gap],
+        if (o.atMarket) ...[_MeetCard(order: o, bucket: b, when: _when(o, b)), gap],
         _Tracker(order: o, vendor: b?.vendor?.name),
         gap,
         if (me != null) ...[_MyMoney(order: o, line: me, bucket: b), gap],
@@ -100,6 +101,10 @@ class _OrderScreenState extends State<OrderScreen> {
       ],
     );
   }
+
+  /// The one pickup/meet line for this order, used by every card on the screen.
+  static String _when(OrderView o, Bucket? b) =>
+      pickupLine(window: o.window, at: asTime(b?.meet?['at']) ?? b?.deliverAt, place: o.pickupPoint);
 
   Widget _header(OrderView o) {
     final members = o.lines.length;
@@ -147,10 +152,11 @@ class _Card extends StatelessWidget {
 }
 
 class _OtpCard extends StatelessWidget {
-  const _OtpCard({required this.order, required this.line, this.vendor});
+  const _OtpCard({required this.order, required this.line, this.vendor, required this.when});
   final OrderView order;
   final MemberLine line;
   final String? vendor;
+  final String when;
 
   @override
   Widget build(BuildContext context) {
@@ -200,11 +206,11 @@ class _OtpCard extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppSpace.xs),
-          if (order.window != null && order.window!.isNotEmpty)
+          if (when.isNotEmpty)
             Row(mainAxisAlignment: MainAxisAlignment.center, children: [
               const Icon(Icons.schedule_rounded, size: 16, color: AppColors.inkMuted),
               const SizedBox(width: 4),
-              Text(order.window!, style: AppText.bodyMuted),
+              Text(when, style: AppText.bodyMuted),
             ]),
           const SizedBox(height: AppSpace.md),
           Container(
@@ -223,15 +229,15 @@ class _OtpCard extends StatelessWidget {
 }
 
 class _MeetCard extends StatelessWidget {
-  const _MeetCard({required this.order, this.bucket});
+  const _MeetCard({required this.order, this.bucket, required this.when});
   final OrderView order;
   final Bucket? bucket;
+  final String when;
 
   @override
   Widget build(BuildContext context) {
     final meet = bucket?.meet;
     final place = asStringOrNull(meet?['place']) ?? order.pickupPoint ?? 'the market';
-    final at = asTime(meet?['at']);
     final note = asStringOrNull(meet?['note']);
     final vendor = bucket?.vendor;
     final due = order.myLine?.paymentStatus == 'due';
@@ -255,9 +261,9 @@ class _MeetCard extends StatelessWidget {
               [if (vendor?.place != null && !place.contains(vendor!.place!)) vendor.place!, place].join(', '),
               style: AppText.heading.copyWith(fontSize: 17),
             ),
-            if (at != null) ...[
+            if (when.isNotEmpty) ...[
               const SizedBox(height: 2),
-              Text(Fmt.dayTime(at), style: AppText.body),
+              Text(when, style: AppText.body),
             ],
             if (note != null) ...[
               const SizedBox(height: AppSpace.sm),
@@ -433,8 +439,8 @@ class _MyMoney extends StatelessWidget {
               style: AppText.body.copyWith(fontWeight: FontWeight.w800), trailing: line.pill()),
         ] else ...[
           row('Held with UPI', held),
-          row('Paid', line.amount, style: AppText.body.copyWith(fontWeight: FontWeight.w800), trailing: line.pill()),
-          if (released > 0) row('Released to you', released, style: AppText.body.copyWith(color: AppColors.released)),
+          row('Paid to vendor', line.amount, style: AppText.body.copyWith(fontWeight: FontWeight.w800), trailing: line.pill()),
+          if (released > 0) row('Back to your bank', released, style: AppText.body.copyWith(color: AppColors.released)),
         ],
         if (line.savings > 0) ...[
           const Padding(padding: EdgeInsets.symmetric(vertical: AppSpace.sm), child: Divider()),

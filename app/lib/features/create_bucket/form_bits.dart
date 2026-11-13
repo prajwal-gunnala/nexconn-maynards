@@ -137,19 +137,19 @@ class ChoicePill extends StatelessWidget {
             height: 40,
             padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
-              color: selected ? AppColors.brandTint : AppColors.surface,
+              color: selected ? AppColors.brand : AppColors.surface,
               borderRadius: BorderRadius.circular(AppRadius.chip),
-              border: Border.all(color: selected ? AppColors.brand : AppColors.line, width: selected ? 1.5 : 1),
+              border: Border.all(color: selected ? AppColors.brand : AppColors.line),
             ),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
               if (selected) ...[
-                const Icon(Icons.check_rounded, size: 16, color: AppColors.brandDeep),
+                const Icon(Icons.check_rounded, size: 16, color: Colors.white),
                 const SizedBox(width: 4),
               ] else if (icon != null) ...[
                 Icon(icon, size: 16, color: AppColors.inkMuted),
                 const SizedBox(width: 6),
               ],
-              Text(label, style: AppText.label.copyWith(color: selected ? AppColors.brandDeep : AppColors.ink)),
+              Text(label, style: AppText.label.copyWith(color: selected ? Colors.white : AppColors.ink)),
             ]),
           ),
         ),

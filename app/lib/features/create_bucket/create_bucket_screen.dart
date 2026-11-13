@@ -11,6 +11,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/theme/tokens.dart';
 import '../../widgets/widgets.dart';
 import '../bucket/bucket_visuals.dart';
+import '../orders/time_fmt.dart';
 import 'bucket_draft.dart';
 import 'draft_preview.dart';
 import 'form_bits.dart';
@@ -262,7 +263,7 @@ class _CreateBucketScreenState extends State<CreateBucketScreen> {
       cutoffAt: _cutoff,
       atMarket: _atMarket,
       meetLine: _atMarket && _meetAt != null
-          ? 'Meet at ${_meetPlace.text.trim().isEmpty ? 'the market' : _meetPlace.text.trim()} · ${Fmt.dayTime(_meetAt!)}'
+          ? 'Meet at ${_meetPlace.text.trim().isEmpty ? 'the market' : _meetPlace.text.trim()} · ${dayTimeR(_meetAt!)}'
           : null,
       poster: session.user == null ? null : '${session.user!.name}${session.unit == null ? '' : ' · ${session.unit}'}',
     );
@@ -418,7 +419,8 @@ class _CreateBucketScreenState extends State<CreateBucketScreen> {
     if (d == null || !mounted) return null;
     final t = await showTimePicker(context: context, initialTime: TimeOfDay.fromDateTime(initial));
     if (t == null) return null;
-    return DateTime(d.year, d.month, d.day, t.hour, t.minute);
+    // Snap to :00 / :30 so every screen shows a time a person would pick.
+    return roundHalfHour(DateTime(d.year, d.month, d.day, t.hour, t.minute));
   }
 
   Future<void> _close() async {
@@ -1193,7 +1195,7 @@ class _CreateBucketScreenState extends State<CreateBucketScreen> {
                     const SizedBox(height: AppSpace.md),
                     PickerTile(
                       label: 'Meet time',
-                      value: _meetAt == null ? 'Pick a time' : Fmt.dayTime(_meetAt!),
+                      value: _meetAt == null ? 'Pick a time' : dayTimeR(_meetAt!),
                       icon: Icons.schedule_rounded,
                       error: _errors['meetAt'],
                       onTap: () async {
@@ -1227,7 +1229,7 @@ class _CreateBucketScreenState extends State<CreateBucketScreen> {
       children: [
         PickerTile(
           label: 'Closes',
-          value: _cutoff == null ? 'Pick a time' : Fmt.dayTime(_cutoff!),
+          value: _cutoff == null ? 'Pick a time' : dayTimeR(_cutoff!),
           hint: _cutoff == null ? null : Fmt.timeLeft(_cutoff!, now: now),
           icon: Icons.timer_outlined,
           error: _errors['cutoff'],
