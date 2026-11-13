@@ -22,6 +22,16 @@ void main() {
     expect(jsPreviewFor(JsType.event, {'text': 'Ananya (B-1204) took 10 kg'}), 'Ananya took 10 kg');
     expect(jsPreviewFor(JsType.order, {'orderId': 'JS-2041'}), 'Order JS-2041 created');
     expect(jsPreviewFor(JsType.otp, {'otp': '5193'}), 'Your pickup code');
+    expect(splitUnlock('Venkat (D-604) took 12 kg and unlocked ₹88/kg for everyone!'), ('Venkat (D-604) took 12 kg', '₹88/kg'));
+    expect(splitUnlock('Ananya (B-1204) took 10 kg'), isNull);
+    expect(jsPreviewFor(JsType.event, {'text': 'Venkat (D-604) took 12 kg and unlocked ₹88/kg for everyone!'}),
+        '₹88/kg unlocked! Venkat took 12 kg');
+  });
+
+  test('short bucket titles for list rows', () {
+    expect(ChatDirectory.shortBucketTitle('Kasimedu Book & Meet: Whole Paarai'), 'Whole Paarai');
+    expect(ChatDirectory.shortBucketTitle('Aged Basmati Rice (1121)'), 'Aged Basmati Rice');
+    expect(ChatDirectory.shortBucketTitle('Whole Goat, 7-share Split'), 'Whole Goat');
   });
 
   test('avatar initials and stable colours', () {

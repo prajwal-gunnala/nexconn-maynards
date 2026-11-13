@@ -1,4 +1,4 @@
-# Jugaad Street — status (paused 2026-11-13, 10:20 IST)
+# Jugaad Street — status (updated 2026-11-13, 11:30 IST)
 
 Deadline: **Nov 22, 23:59 AoE**. Branch `dev`, all local (nothing pushed or published — the user decides when).
 
@@ -16,6 +16,13 @@ Deadline: **Nov 22, 23:59 AoE**. Branch `dev`, all local (nothing pushed or publ
 - **Film prep**: narration approved — Gemini "Charon" take 1, 50.4 s, `/mnt/storage/videoedit-media/jugaad-film/work/vo/narration.wav`
   (+ `narration_words.json` word times). Music candidates (5, Pixabay) in `/mnt/storage/videoedit-media/jugaad-film/music/`.
   Film stills were mid-generation in Google Flow (`art/candidates/`, project in Flow) when paused.
+
+## Since the pause
+- Gemini + ChatGPT reviews applied across every screen; one consistent data story; shared `AppClock`.
+- Logo, launcher icon, native + animated basket splash; group-buying home; QA fixes verified on device.
+- Server: each seed gets fresh Street + bucket chats (seed-tagged bucket groups, bot DM history cleared).
+- Film: timeline generated (`videoedit/projects/jugaad-film/src/timeline.ts`, 55.6 s); app footage capture running
+  (`/mnt/storage/videoedit-media/jugaad-film/app/`); film art in Flow running.
 
 ## Next (in order)
 1. **Disk**: all non-browser caches cleared with the user's OK (2026-11-13 ~10:40): Gradle caches, model caches, npm, tracker, pip. Main disk ~19 GB free. Kept: browser caches, Gradle 9.3.1 dist, ~/.pub-cache. First Gradle build re-downloads deps.
