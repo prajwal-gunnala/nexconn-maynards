@@ -8,6 +8,7 @@ import 'core/nexconn/chat_session.dart';
 import 'core/nexconn/nexconn_service.dart';
 import 'core/session/session_store.dart';
 import 'core/theme/app_theme.dart';
+import 'features/splash/splash_screen.dart';
 import 'router.dart';
 
 /// Root widget. Provides (read with `context.read<T>()`):
@@ -52,6 +53,9 @@ class _JugaadStreetAppState extends State<JugaadStreetApp> {
           debugShowCheckedModeBanner: false,
           theme: AppTheme.light(),
           routerConfig: _router,
+          // Brand splash: plays once over the first screen on cold start, continuing the native launch
+          // screen (SessionStore is already open by now; the router builds underneath). Not routing.
+          builder: (context, child) => SplashOverlay(child: child ?? const SizedBox.shrink()),
           locale: nexconnChatUIDefaultLocale,
           localizationsDelegates: NexconnChatUILocalizations.localizationsDelegates,
           supportedLocales: NexconnChatUILocalizations.supportedLocales,

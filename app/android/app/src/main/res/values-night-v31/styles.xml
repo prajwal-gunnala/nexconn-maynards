@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android 12+ in dark mode. Needed because values-night outranks values-v31 in resource matching. -->
+    <!-- LaunchTheme: shown while the process starts and until Flutter draws its first frame, which is the
+         splash overlay (lib/features/splash/splash_screen.dart) drawing the same basket in the same place. -->
+    <style name="LaunchTheme" parent="@android:style/Theme.Black.NoTitleBar">
+        <item name="android:windowBackground">@drawable/launch_background</item>
+        <item name="android:statusBarColor">@color/brand_tomato</item>
+        <item name="android:navigationBarColor">@color/brand_tomato</item>
+        <!-- Android 12+ system splash: tomato, with the empty basket as the icon. The icon background is the
+             same tomato, so the 240 dp / 160 dp-circle "icon with background" spec applies and the circle is
+             invisible. -->
+        <item name="android:windowSplashScreenBackground">@color/brand_tomato</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">@color/brand_tomato</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>
+    </style>
+    <!-- NormalTheme: the window behind the Flutter UI once it is running. The app canvas colour, so nothing
+         white or black flashes between the splash and the first screen. -->
+    <style name="NormalTheme" parent="@android:style/Theme.Black.NoTitleBar">
+        <item name="android:windowBackground">@color/app_canvas</item>
+    </style>
+</resources>

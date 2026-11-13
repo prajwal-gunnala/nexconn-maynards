@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12+ splash icon (windowSplashScreenAnimatedIcon): the empty white basket on a 240 dp canvas.
+     Paths are mark.svg's (512 units) with the glyph's visual centre (256, 250) moved to the canvas centre and
+     scaled 230/512, so the whole glyph stays within a 72 dp radius, inside the 160 dp visible circle.
+     Same size/position as splash_logo.png and the Flutter splash overlay (kSplashArtExtent = 230). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="240dp"
+    android:height="240dp"
+    android:viewportWidth="240"
+    android:viewportHeight="240">
+    <group
+        android:pivotX="256"
+        android:pivotY="250"
+        android:scaleX="0.44921875"
+        android:scaleY="0.44921875"
+        android:translateX="-136"
+        android:translateY="-130">
+        <!-- handle -->
+        <path
+            android:pathData="M136,252 C136,52 376,52 376,252"
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="26"
+            android:strokeLineCap="round" />
+        <!-- basket body -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M108,250 H404 C400,344 342,410 256,410 C170,410 112,344 108,250 Z" />
+        <!-- weave -->
+        <path
+            android:pathData="M136,300 C200,318 312,318 376,300 M166,352 C216,368 296,368 346,352"
+            android:strokeColor="#E4572E"
+            android:strokeWidth="15"
+            android:strokeLineCap="round" />
+    </group>
+</vector>

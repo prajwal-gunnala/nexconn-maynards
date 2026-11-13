@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Modify this file to customize your launch splash screen -->
+<!-- Pre-Android-12 launch screen: brand tomato with the empty white basket centred (the Flutter splash
+     overlay then fills it). splash_logo.png is 150 dp; the basket art is drawn at the same size and
+     position as kSplashArtExtent in lib/features/splash/splash_screen.dart. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@android:color/white" />
-
-    <!-- You can insert your own image assets here -->
-    <!-- <item>
+    <item android:drawable="@color/brand_tomato" />
+    <item>
         <bitmap
             android:gravity="center"
-            android:src="@mipmap/launch_image" />
-    </item> -->
+            android:filter="true"
+            android:src="@drawable/splash_logo" />
+    </item>
 </layer-list>

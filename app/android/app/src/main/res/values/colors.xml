@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Jugaad Street brand (lib/core/theme/tokens.dart: AppColors.brand / AppColors.canvas). -->
+    <color name="brand_tomato">#E4572E</color>
+    <color name="app_canvas">#FAF7F5</color>
+    <color name="ic_launcher_background">#E4572E</color>
+</resources>
