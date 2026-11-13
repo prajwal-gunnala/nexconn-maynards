@@ -15,35 +15,36 @@ import 'package:jugaad_street/features/vendor/vendor_screen.dart';
 
 import 'harness.dart';
 
-final _cutoff = DateTime.now().add(const Duration(hours: 3, minutes: 12)).toUtc().toIso8601String();
+// All data comes from test/fixtures (recorded from a fresh seed) and matches the buyer-side goldens
+// (create_orders_wallet_golden_test.dart): basmati order JS-2043, Ananya B-1204 10 kg ₹880, OTP 5193.
 
-Map<String, String> _card(String id, String type, String title, String sub, String image, String vendor, String unit) => {
-      'bucketId': id,
-      'type': type,
-      'title': title,
-      'subtitle': sub,
-      'image': image,
-      'vendor': vendor,
-      'cutoffAt': _cutoff,
-      'unitLabel': unit,
+Map<String, dynamic> _bucket(String id) => (fixture('bucket_$id') as Map).cast<String, dynamic>();
+
+/// `js:bucket` content fields exactly as the server posts them for a fixture bucket.
+Map<String, String> _cardFields(Map<String, dynamic> b) => {
+      'bucketId': b['id'] as String,
+      'type': b['type'] as String,
+      'title': b['title'] as String,
+      'subtitle': (b['subtitle'] ?? '') as String,
+      'image': (b['image'] ?? '') as String,
+      'vendor': ((b['vendor'] as Map?)?['name'] ?? '') as String,
+      'cutoffAt': DateTime.now().add(const Duration(hours: 9, minutes: 55)).toUtc().toIso8601String(),
+      'unitLabel': (b['unitLabel'] ?? '') as String,
     };
 
-final _seerFields = _card('b_seer', 'split', 'Whole Seer (Vanjaram)', 'Landed 6:10 am at Kasimedu', 'seer', 'Murugan Fish Stall', 'cut');
-final _seerMeta = {
-  'p': jsonEncode({'filled': 6, 'target': 8, 'members': 6, 'held': 3680, 'unitPrice': 950, 'nextTier': null, 'percent': 75, 'goAt': 8}),
-  's': 'live',
-  'u': jsonEncode([
-    ['head', 'S'], ['s1', 'R'], ['s2', ''], ['s3', 'M'], ['s4', 'K'], ['s5', 'P'], ['s6', 'A'], ['tail', ''],
-  ]),
-};
-final _basmatiFields = _card('b_basmati', 'bulk', 'Aged Basmati Rice (1121)', '25 kg sacks, split at the gate', 'basmati', 'Sri Balaji Traders', 'kg');
-Map<String, String> _basmatiMeta(int filled) => {
-      'p': jsonEncode({
-        'filled': filled, 'target': 100, 'members': 7, 'held': 8352, 'unitPrice': 96,
-        'nextTier': {'minQty': 100, 'unitPrice': 88, 'remaining': 100 - filled}, 'percent': filled, 'goAt': 25,
-      }),
-      's': 'live',
-    };
+/// Card metadata (`p`, `s`, `u`) for a fixture bucket, optionally with progress changes.
+Map<String, String> _cardMeta(Map<String, dynamic> b, {Map<String, dynamic> progress = const {}}) {
+  final units = b['units'] as List?;
+  return {
+    'p': jsonEncode({...(b['progress'] as Map), ...progress}),
+    's': b['status'] as String,
+    if (units != null)
+      'u': jsonEncode([
+        for (final u in units.cast<Map>())
+          [u['id'], ((u['owner'] as Map?)?['name'] as String?)?.substring(0, 1) ?? ''],
+      ]),
+  };
+}
 
 Widget _chatCanvas(List<Widget> children) => Scaffold(
       backgroundColor: AppColors.canvas,
@@ -57,57 +58,78 @@ Widget _chatCanvas(List<Widget> children) => Scaffold(
       ),
     );
 
-Map<String, dynamic> _line(String user, String name, String unit, String qty, int amount,
-        {bool collected = false, Map<String, String>? options, String payMode = 'hold'}) =>
-    {
-      'userId': user, 'name': name, 'unit': unit, 'qty': 1, 'qtyLabel': qty, 'amount': amount, 'payMode': payMode,
-      'paymentStatus': payMode == 'hold' ? 'captured' : 'due', 'otp': null, 'collected': collected, 'options': options,
+Map<String, Object?> _line(String id, String name, String unit, num qty, String label, int amount, {bool collected = false}) => {
+      'shareId': 's_$id', 'userId': id, 'name': name, 'unit': unit, 'qty': qty, 'qtyLabel': label, 'amount': amount,
+      'payMode': 'hold', 'paymentStatus': 'captured', 'otp': null, 'collected': collected, 'options': null,
     };
 
-final _orderLines = [
-  _line('u_ananya', 'Ananya', 'B-1204', '18 kg', 1584),
-  _line('u_meera', 'Meera', 'A-303', '15 kg', 1320, collected: true),
-  _line('u_ravi', 'Ravi', 'C-801', '10 kg', 880, collected: true),
-  _line('u_kiran', 'Kiran', 'B-402', '25 kg', 2200),
-  _line('u_sunita', 'Sunita', 'A-201', '12 kg', 1056),
-  _line('u_arjun', 'Arjun', 'B-702', '20 kg', 1760, collected: true),
+/// Same lines as the buyer's order detail (vendor view: no OTPs).
+final _riceLines = [
+  _line('u_ananya', 'Ananya', 'B-1204', 10, '10 kg', 880),
+  _line('u_meera', 'Meera', 'A-303', 15, '15 kg', 1320),
+  _line('u_ravi', 'Ravi', 'C-801', 20, '20 kg', 1760),
+  _line('u_kiran', 'Kiran', 'B-402', 10, '10 kg', 880),
+  _line('u_priya', 'Priya', 'A-1101', 12, '12 kg', 1056),
+  _line('u_arjun', 'Arjun', 'B-702', 15, '15 kg', 1320),
+  _line('u_sunita', 'Sunita', 'A-201', 10, '10 kg', 880),
+  _line('n_venkat', 'Venkat', 'D-604', 12, '12 kg', 1056),
 ];
 
-Map<String, dynamic> _order(List<Map<String, dynamic>> lines) => {
-      'id': 'JS-2050', 'bucketId': 'b_basmati', 'communityId': 'c_seabreeze', 'vendorId': 'v_balaji',
-      'title': 'Aged Basmati Rice (1121)', 'image': 'basmati', 'total': 8800, 'status': 'packed',
-      'pickupPoint': 'Gate 2', 'window': 'Sat 7:00–9:00 am', 'lines': lines,
+Map<String, Object?> _riceOrder(List<Map<String, Object?>> lines) => {
+      'id': 'JS-2043', 'bucketId': 'b_basmati', 'communityId': 'c_seabreeze', 'vendorId': 'v_balaji',
+      'title': 'Aged Basmati Rice (1121)', 'image': 'basmati', 'total': 9152, 'heldTotal': 9152, 'atPickupTotal': 0,
+      'status': 'packed', 'pickupPoint': 'Clubhouse', 'window': 'Sat 10:00 am–12:00 pm', 'lines': lines,
     };
 
-Map<String, dynamic> _vendorDashboard() {
+/// The vendor dashboard after basmati filled: basmati moves to "ordered" and its lines join the packing list.
+Map<String, dynamic> _vendorAfterOrder() {
   final d = (fixture('vendor_dashboard') as Map).cast<String, dynamic>();
+  final buckets = (d['buckets'] as List).cast<Map<String, dynamic>>();
+  final rice = buckets.firstWhere((b) => b['id'] == 'b_basmati');
+  final held = ((rice['progress'] as Map)['held'] as num).toInt();
   return {
     ...d,
+    'heldDemand': (d['heldDemand'] as num).toInt() - held,
+    'buckets': [
+      for (final b in buckets)
+        b['id'] == 'b_basmati'
+            ? {
+                ...b,
+                'status': 'ordered',
+                'orderId': 'JS-2043',
+                'progress': {...(b['progress'] as Map), 'filled': 104, 'members': 8, 'percent': 100, 'unitPrice': 88, 'held': 0, 'nextTier': null},
+              }
+            : b,
+    ],
     'packing': [
       {
         'communityId': 'c_seabreeze',
         'communityName': 'Sea Breeze Towers',
-        'lines': [
-          for (final l in _orderLines) {...l, 'orderId': 'JS-2050', 'title': 'Aged Basmati Rice (1121)'},
-          {
-            ..._line('u_priya', 'Priya', 'A-1101', '1 half', 520, options: {'cut': 'Curry', 'clean': 'Yes'}, payMode: 'at_market'),
-            'orderId': 'JS-2051',
-            'title': 'Kasimedu Book & Meet: Whole Paarai',
-          },
-        ],
+        'lines': [for (final l in _riceLines) {...l, 'orderId': 'JS-2043', 'title': 'Aged Basmati Rice (1121)'}],
       },
     ],
   };
 }
 
+Future<void> _typeOtp(WidgetTester t, String otp) async {
+  for (final k in otp.split('')) {
+    await t.tap(find.bySemanticsLabel(k).last);
+    await t.pump();
+  }
+}
+
 void main() {
   testWidgets('chat bubbles: bucket cards', (t) async {
+    final seer = _bucket('b_seer');
+    final rice = _bucket('b_basmati');
+    // Live: Venkat's 12 kg took basmati from 92 to 104 kg and unlocked ₹88/kg.
+    final riceMeta = _cardMeta(rice, progress: {'filled': 104, 'members': 8, 'percent': 100, 'unitPrice': 88, 'nextTier': null});
     await shoot(
       t,
       'chat_bubbles_cards',
       _chatCanvas([
-        BucketChatCard(data: BucketCardData.from(_seerFields, _seerMeta), meta: _seerMeta),
-        BucketChatCard(data: BucketCardData.from(_basmatiFields, _basmatiMeta(87)), meta: _basmatiMeta(87), flash: true),
+        BucketChatCard(data: BucketCardData.from(_cardFields(seer), _cardMeta(seer)), meta: _cardMeta(seer)),
+        BucketChatCard(data: BucketCardData.from(_cardFields(rice), riceMeta), meta: riceMeta, flash: true, oldPrice: 96),
       ]),
     );
   });
@@ -117,11 +139,23 @@ void main() {
       t,
       'chat_bubbles_system',
       _chatCanvas([
-        const Center(child: JsEventPill(fields: {'bucketId': 'b_basmati', 'kind': 'joined', 'text': 'Ananya (B-1204) took 18 kg'})),
-        const Center(child: JsEventPill(fields: {'bucketId': 'b_seer', 'kind': 'nudge', 'text': 'Whole Seer: Steak 2 and Tail are still open. 2 cuts left.'})),
-        const Center(child: JsEventPill(fields: {'bucketId': 'b_goat', 'kind': 'locked', 'text': 'Whole Goat is full. Order JS-2052 placed.'})),
-        const JsOrderCard(fields: {'orderId': 'JS-2041', 'bucketId': 'b_basmati', 'title': 'Aged Basmati Rice (1121)', 'total': '8800', 'members': '7'}),
-        const JsOtpCard(fields: {'orderId': 'JS-2041', 'otp': '5193', 'pickupPoint': 'Gate 2, Sea Breeze Towers', 'window': 'Sat 7:00–9:00 am'}),
+        const Center(child: JsEventPill(fields: {'bucketId': 'b_basmati', 'kind': 'joined', 'text': 'Ananya (B-1204) took 10 kg'})),
+        const Center(
+          child: JsEventPill(fields: {
+            'bucketId': 'b_basmati',
+            'kind': 'joined',
+            'text': 'Venkat (D-604) took 12 kg and unlocked ₹88/kg for everyone!',
+          }),
+        ),
+        const Center(
+          child: JsEventPill(fields: {
+            'bucketId': 'b_seer',
+            'kind': 'nudge',
+            'text': 'Whole Seer (Vanjaram): Steak 2 and Tail are still open. 2 cuts left.',
+          }),
+        ),
+        const JsOrderCard(fields: {'orderId': 'JS-2043', 'bucketId': 'b_basmati', 'title': 'Aged Basmati Rice (1121)', 'total': '9152', 'members': '8'}),
+        const JsOtpCard(fields: {'orderId': 'JS-2043', 'otp': '5193', 'pickupPoint': 'Clubhouse', 'window': 'Sat 10:00 am–12:00 pm'}),
       ]),
     );
   });
@@ -144,16 +178,20 @@ void main() {
     );
   });
 
-  testWidgets('vendor today', (t) async {
-    await shoot(t, 'vendor_today', const VendorScreen(), overrides: {'/api/vendor/dashboard': _vendorDashboard()});
+  testWidgets('vendor today (fixture)', (t) async {
+    await shoot(t, 'vendor_today', const VendorScreen());
   });
 
-  testWidgets('vendor today scrolled', (t) async {
+  testWidgets('vendor after basmati filled', (t) async {
+    await shoot(t, 'vendor_today_order', const VendorScreen(), overrides: {'/api/vendor/dashboard': _vendorAfterOrder()});
+  });
+
+  testWidgets('vendor packing list', (t) async {
     await shoot(
       t,
       'vendor_today_packing',
       const VendorScreen(),
-      overrides: {'/api/vendor/dashboard': _vendorDashboard()},
+      overrides: {'/api/vendor/dashboard': _vendorAfterOrder()},
       act: (t) async {
         await t.drag(find.byType(CustomScrollView), const Offset(0, -900));
         await t.pump(const Duration(milliseconds: 500));
@@ -161,40 +199,28 @@ void main() {
     );
   });
 
-  testWidgets('vendor empty packing', (t) async {
-    await shoot(t, 'vendor_today_empty', const VendorScreen());
-  });
-
   testWidgets('handover keypad', (t) async {
     await shoot(
       t,
       'vendor_handover',
-      const HandoverScreen(orderId: 'JS-2050', communityName: 'Sea Breeze Towers'),
-      overrides: {'/api/orders/JS-2050': _order(_orderLines)},
-      act: (t) async {
-        for (final k in ['5', '1', '9']) {
-          await t.tap(find.bySemanticsLabel(k).last);
-          await t.pump();
-        }
-      },
+      const HandoverScreen(orderId: 'JS-2043', communityName: 'Sea Breeze Towers'),
+      overrides: {'/api/orders/JS-2043': _riceOrder(_riceLines)},
+      act: (t) => _typeOtp(t, '519'),
     );
   });
 
   testWidgets('handover confirmed', (t) async {
-    final after = [for (final l in _orderLines) l['userId'] == 'u_ananya' ? {...l, 'collected': true} : l];
+    final after = [for (final l in _riceLines) l['userId'] == 'u_ananya' ? {...l, 'collected': true} : l];
     await shoot(
       t,
       'vendor_handover_done',
-      const HandoverScreen(orderId: 'JS-2050', communityName: 'Sea Breeze Towers'),
+      const HandoverScreen(orderId: 'JS-2043', communityName: 'Sea Breeze Towers'),
       overrides: {
-        '/api/orders/JS-2050': _order(_orderLines),
-        'POST /api/orders/JS-2050/handover': {'order': _order(after)},
+        '/api/orders/JS-2043': _riceOrder(_riceLines),
+        'POST /api/orders/JS-2043/handover': {'order': _riceOrder(after)},
       },
       act: (t) async {
-        for (final k in ['5', '1', '9', '3']) {
-          await t.tap(find.bySemanticsLabel(k).last);
-          await t.pump();
-        }
+        await _typeOtp(t, '5193');
         await t.runAsync(() async {
           await t.tap(find.text('Confirm handover'));
           await Future<void>.delayed(const Duration(milliseconds: 100));

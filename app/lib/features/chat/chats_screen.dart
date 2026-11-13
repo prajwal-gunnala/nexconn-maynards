@@ -82,7 +82,7 @@ class _ChannelTitle extends StatelessWidget {
         return Row(mainAxisSize: MainAxisSize.min, children: [
           Flexible(
             child: Text(
-              dir.titleNow(channel.channelId, direct: direct),
+              dir.titleNow(channel.channelId, direct: direct, short: true),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: AppText.heading.copyWith(fontSize: 15),

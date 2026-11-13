@@ -42,11 +42,16 @@ String jsPreviewFor(String type, Map<String, String> f) {
   String? v(String k) => (f[k] ?? '').trim().isEmpty ? null : f[k]!.trim();
   return switch (type) {
     JsType.bucket => 'New bucket: ${v('title') ?? 'a group buy'}',
-    JsType.event => stripFlat(v('text') ?? 'Bucket update'),
+    JsType.event => _eventPreview(stripFlat(v('text') ?? 'Bucket update')),
     JsType.order => v('orderId') == null ? 'Order created' : 'Order ${v('orderId')} created',
     JsType.otp => 'Your pickup code',
     _ => 'New update',
   };
+}
+
+String _eventPreview(String text) {
+  final u = splitUnlock(text);
+  return u == null ? text : '${u.$2} unlocked! ${u.$1}';
 }
 
 /// "Ananya (B-1204) took 10 kg" → "Ananya took 10 kg" (list previews only).
@@ -93,6 +98,10 @@ class _BucketCardBubbleState extends State<BucketCardBubble> {
   Timer? _flashTimer;
   bool _flash = false;
 
+  /// Unit price before a live tier change (shown struck through for a few seconds).
+  int? _oldPrice;
+  Timer? _priceTimer;
+
   NexconnService get _nx => context.read<NexconnService>();
 
   @override
@@ -117,10 +126,19 @@ class _BucketCardBubbleState extends State<BucketCardBubble> {
     if (id != null) {
       _sub = _nx.watchMetadata(id).listen((u) {
         if (!mounted) return;
+        final before = BucketCardData.from(_fields, _meta).progress?.unitPrice;
+        final after = BucketCardData.from(_fields, u.metadata).progress?.unitPrice;
         setState(() {
           _meta = u.metadata;
           _flash = true;
+          if (before != null && after != null && after < before) _oldPrice = before;
         });
+        if (_oldPrice != null) {
+          _priceTimer?.cancel();
+          _priceTimer = Timer(const Duration(seconds: 6), () {
+            if (mounted) setState(() => _oldPrice = null);
+          });
+        }
         _flashTimer?.cancel();
         _flashTimer = Timer(const Duration(milliseconds: 1400), () {
           if (mounted) setState(() => _flash = false);
@@ -133,6 +151,7 @@ class _BucketCardBubbleState extends State<BucketCardBubble> {
   void dispose() {
     _sub?.cancel();
     _flashTimer?.cancel();
+    _priceTimer?.cancel();
     super.dispose();
   }
 
@@ -154,6 +173,7 @@ class _BucketCardBubbleState extends State<BucketCardBubble> {
       data: card,
       meta: _meta,
       flash: _flash,
+      oldPrice: _oldPrice,
       onTap: card.bucketId.isEmpty ? null : () => context.push('/bucket/${card.bucketId}'),
       onLongPress: kDebugMode && AppConfig.hasDevToken ? _devSetMetadata : null,
     );
@@ -167,6 +187,7 @@ class BucketChatCard extends StatelessWidget {
     required this.data,
     this.meta = const {},
     this.flash = false,
+    this.oldPrice,
     this.onTap,
     this.onLongPress,
     this.width = 272,
@@ -179,6 +200,9 @@ class BucketChatCard extends StatelessWidget {
 
   /// Briefly true after a live update: brand border + "Updated" tag.
   final bool flash;
+
+  /// Set right after a live tier drop: the price turns green with the old one struck through.
+  final int? oldPrice;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
   final double width;
@@ -285,10 +309,7 @@ class BucketChatCard extends StatelessWidget {
                 ],
                 if (p?.unitPrice != null) ...[
                   const SizedBox(height: AppSpace.sm),
-                  Text.rich(TextSpan(children: [
-                    TextSpan(text: Fmt.rupees(p!.unitPrice!), style: AppText.price.copyWith(fontSize: 17)),
-                    TextSpan(text: ' /$unit', style: AppText.caption),
-                  ])),
+                  _PriceLine(price: p!.unitPrice!, unit: unit, oldPrice: oldPrice),
                 ],
                 if (c.type == BucketType.split && c.units.isNotEmpty) ...[
                   const SizedBox(height: AppSpace.sm),
@@ -396,6 +417,47 @@ class BucketChatCard extends StatelessWidget {
   }
 }
 
+class _PriceLine extends StatelessWidget {
+  const _PriceLine({required this.price, required this.unit, this.oldPrice});
+
+  final int price;
+  final String unit;
+  final int? oldPrice;
+
+  @override
+  Widget build(BuildContext context) {
+    final dropped = oldPrice != null && oldPrice! > price;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 350),
+      padding: EdgeInsets.symmetric(horizontal: dropped ? AppSpace.sm : 0, vertical: dropped ? AppSpace.xs : 0),
+      decoration: BoxDecoration(
+        color: dropped ? TierUnlockedPill.bg : Colors.transparent,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.center, children: [
+        Text.rich(TextSpan(children: [
+          TextSpan(
+            text: Fmt.rupees(price),
+            style: AppText.price.copyWith(fontSize: 17, color: dropped ? TierUnlockedPill.fg : AppColors.ink),
+          ),
+          TextSpan(text: ' /$unit', style: AppText.caption.copyWith(color: dropped ? TierUnlockedPill.fg : null)),
+        ])),
+        if (dropped) ...[
+          const SizedBox(width: AppSpace.sm),
+          Text(
+            Fmt.rupees(oldPrice!),
+            style: AppText.caption.copyWith(decoration: TextDecoration.lineThrough, decorationColor: AppColors.inkMuted),
+          ),
+          const SizedBox(width: AppSpace.sm),
+          const Icon(Icons.trending_down_rounded, size: 16, color: TierUnlockedPill.fg),
+          const SizedBox(width: 2),
+          Text('New price', style: AppText.tiny.copyWith(color: TierUnlockedPill.fg, fontWeight: FontWeight.w800)),
+        ],
+      ]),
+    );
+  }
+}
+
 /// Split buckets: one dot per cut/share, filled with the owner's initial.
 class _UnitDots extends StatelessWidget {
   const _UnitDots({required this.units});
@@ -431,6 +493,14 @@ class _UnitDots extends StatelessWidget {
 // ---- js:event -----------------------------------------------------------------------------------
 
 /// Centred system line: "Ananya (B-1204) took 10 kg".
+/// `"Ananya (B-1204) took 8 kg and unlocked ₹88/kg for everyone!"` →
+/// (`"Ananya (B-1204) took 8 kg"`, `"₹88/kg"`). Null when there is no unlock.
+(String, String)? splitUnlock(String text) {
+  final m = RegExp(r'^(.*?)[,\s]+and unlocked\s+(₹[\d,]+(?:/[^\s!.]+)?)', caseSensitive: false).firstMatch(text.trim());
+  if (m == null) return null;
+  return (m.group(1)!.trim(), m.group(2)!.trim());
+}
+
 class JsEventPill extends StatelessWidget {
   const JsEventPill({super.key, required this.fields});
 
@@ -438,6 +508,16 @@ class JsEventPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final unlock = splitUnlock(fields['text'] ?? '');
+    if (unlock == null) return _pill(context, fields);
+    return Column(mainAxisSize: MainAxisSize.min, children: [
+      _pill(context, {...fields, 'text': unlock.$1}),
+      const SizedBox(height: AppSpace.sm),
+      TierUnlockedPill(price: unlock.$2, bucketId: fields['bucketId'] ?? ''),
+    ]);
+  }
+
+  static Widget _pill(BuildContext context, Map<String, String> fields) {
     final kind = fields['kind'] ?? '';
     final (icon, color) = switch (kind) {
       'joined' => (Icons.add_circle_rounded, AppColors.save),
@@ -478,6 +558,60 @@ class JsEventPill extends StatelessWidget {
               ),
             ),
           ]),
+        ),
+      ),
+    );
+  }
+}
+
+/// The best real-time moment: a join pushed the bucket to a cheaper tier.
+class TierUnlockedPill extends StatelessWidget {
+  const TierUnlockedPill({super.key, required this.price, this.bucketId = ''});
+
+  /// `₹88/kg`
+  final String price;
+  final String bucketId;
+
+  static const bg = Color(0xFFE8F5E9);
+  static const fg = Color(0xFF1B5E20);
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: bucketId.isNotEmpty,
+      label: '$price unlocked for everyone',
+      excludeSemantics: true,
+      child: GestureDetector(
+        onTap: bucketId.isEmpty ? null : () => context.push('/bucket/$bucketId'),
+        child: TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0.85, end: 1),
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.elasticOut,
+          builder: (context, scale, child) => Transform.scale(scale: scale, child: child),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 320, minHeight: 40),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpace.lg, vertical: AppSpace.sm),
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(AppRadius.chip),
+              border: Border.all(color: fg.withValues(alpha: 0.25)),
+            ),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              const Icon(Icons.auto_awesome_rounded, size: 16, color: fg),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text.rich(
+                  TextSpan(children: [
+                    TextSpan(text: price, style: AppText.label.copyWith(color: fg, fontWeight: FontWeight.w800)),
+                    TextSpan(text: ' unlocked for everyone', style: AppText.label.copyWith(color: fg)),
+                  ]),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              const SizedBox(width: 6),
+              const Icon(Icons.trending_down_rounded, size: 18, color: fg),
+            ]),
+          ),
         ),
       ),
     );
@@ -612,7 +746,7 @@ class JsOtpCard extends StatelessWidget {
             if (window.isNotEmpty) ...[const SizedBox(height: AppSpace.xs), _line(Icons.schedule_rounded, window)],
             const SizedBox(height: AppSpace.md),
             Text(
-              'Show this to the vendor at handover. Your payment is released only then.',
+              'Show it to the vendor at handover; they are paid only then. Never post it in the Street group.',
               style: AppText.caption.copyWith(color: Colors.white.withValues(alpha: 0.88)),
             ),
           ]),

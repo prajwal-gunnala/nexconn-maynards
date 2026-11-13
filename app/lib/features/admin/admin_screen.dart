@@ -29,6 +29,19 @@ class AdminData {
   final List<PendingVendor> pendingVendors;
   final List<Nudge> nudges;
 
+  /// Uses [c]'s stats as the single source for the headline numbers.
+  AdminData withCommunity(Community? c) {
+    final stats = c?.stats;
+    if (c == null || stats == null) return this;
+    return AdminData(
+      community: c,
+      savedThisMonth: stats.savedThisMonth,
+      members: stats.members,
+      pendingVendors: pendingVendors,
+      nudges: nudges,
+    );
+  }
+
   factory AdminData.fromJson(Json j) => AdminData(
     community: asJson(j['community']) == null ? null : Community.fromJson(asJson(j['community'])!),
     savedThisMonth: asInt(j['savedThisMonth']),
@@ -103,7 +116,16 @@ class _AdminScreenState extends State<AdminScreen> {
   Future<AdminData> _load() async {
     final id = _communityId;
     if (id == null) throw const ApiException('NO_COMMUNITY', 'Join a community first.');
-    return AdminData.fromJson(await context.read<ApiClient>().adminCommunity(id));
+    final api = context.read<ApiClient>();
+    // Admin-only lists from the admin endpoint; the numbers (saved, members, live buckets)
+    // from the same `GET /api/communities/:id` stats the home screen shows.
+    final results = await Future.wait<Object?>([
+      api.adminCommunity(id),
+      api.community(id).then<Community?>((c) => c, onError: (_) => null),
+    ]);
+    final admin = AdminData.fromJson(results[0] as Json);
+    final community = results[1] as Community?;
+    return admin.withCommunity(community);
   }
 
   Future<void> _refresh() async {
@@ -267,9 +289,9 @@ class _CommunityHeader extends StatelessWidget {
           if (adminLine != null) StatusPill(adminLine!, tone: PillTone.brand, icon: Icons.verified_user_outlined),
           const SizedBox(height: AppSpace.md),
           Text(c?.name ?? 'Your community', style: AppText.display.copyWith(fontSize: 26)),
-          if (c != null && c.subtitle.isNotEmpty) ...[
+          if (c != null && [c.area, c.city].whereType<String>().isNotEmpty) ...[
             const SizedBox(height: 2),
-            Text(c.subtitle.substring(0, 1).toUpperCase() + c.subtitle.substring(1), style: AppText.bodyMuted),
+            Text([c.area, c.city].whereType<String>().join(', '), style: AppText.bodyMuted),
           ],
           const SizedBox(height: AppSpace.lg),
           Row(
@@ -506,7 +528,7 @@ class _NudgeCard extends StatelessWidget {
                       child: Text(
                         n.title ?? 'Bucket',
                         style: AppText.heading.copyWith(fontSize: 15),
-                        maxLines: 1,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),

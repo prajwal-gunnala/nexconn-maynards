@@ -104,8 +104,8 @@ class _HandoverScreenState extends State<HandoverScreen> {
         content: Text(line == null
             ? 'Handed over'
             : line.payMode == PayMode.atMarket
-                ? 'Handed to ${line.name} · collect ${Fmt.rupees(line.amount)}'
-                : 'Handed to ${line.name} · ${Fmt.rupees(line.amount)} released'),
+                ? 'Handed to ${line.name} · collect ${Fmt.rupees(line.amount)} now'
+                : 'Handed to ${line.name} · ${Fmt.rupees(line.amount)} paid to you'),
       ));
     } on ApiException catch (e) {
       HapticFeedback.heavyImpact();
@@ -221,7 +221,7 @@ class _Summary extends StatelessWidget {
           ),
           Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
             Text(Fmt.rupees(o.releasedAmount), style: AppText.price.copyWith(color: AppColors.save)),
-            Text('released to you', style: AppText.tiny),
+            Text('paid to you', style: AppText.tiny),
           ]),
         ]),
         const SizedBox(height: AppSpace.sm),
@@ -399,7 +399,7 @@ class _AllDone extends StatelessWidget {
               const SizedBox(height: AppSpace.sm),
               Text('Everyone has collected', style: AppText.heading),
               const SizedBox(height: AppSpace.xs),
-              Text('${Fmt.rupees(order.releasedAmount)} released for ${order.id}', style: AppText.bodyMuted),
+              Text('${Fmt.rupees(order.releasedAmount)} paid to you for ${order.id}', style: AppText.bodyMuted),
               const SizedBox(height: AppSpace.lg),
               AppButton(label: 'Back to today', onPressed: () => Navigator.of(context).maybePop()),
             ]),

@@ -3,10 +3,10 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/api/api_client.dart';
-import '../../core/nexconn/chat_session.dart';
 import '../../core/format.dart';
 import '../../core/images.dart';
 import '../../core/models/models.dart';
+import '../../core/nexconn/chat_session.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/tokens.dart';
 import '../../widgets/widgets.dart';
@@ -238,7 +238,7 @@ class _HeldHero extends StatelessWidget {
               const SizedBox(width: AppSpace.sm),
               Expanded(
                 child: Text(
-                  'Held with UPI. Paid to you when each buyer collects with their OTP.',
+                  'Paid to you at handover, after each buyer\u2019s OTP.',
                   style: AppText.caption.copyWith(color: Colors.white),
                 ),
               ),

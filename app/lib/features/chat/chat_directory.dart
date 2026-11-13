@@ -196,12 +196,28 @@ class ChatDirectory extends ChangeNotifier {
     return name.isEmpty ? 'Street chat' : '$name Street';
   }
 
-  /// Best title available right now (no network).
-  String titleNow(String channelId, {bool direct = false}) {
+  /// "Kasimedu Book & Meet: Whole Paarai" → "Whole Paarai";
+  /// "Aged Basmati Rice (1121)" → "Aged Basmati Rice". For tight list rows.
+  static String shortBucketTitle(String title) {
+    var t = title.trim();
+    final colon = t.indexOf(': ');
+    if (colon > 0 && colon < t.length - 3) t = t.substring(colon + 2);
+    t = t.replaceAll(RegExp(r'\s*\([^)]*\)\s*$'), '');
+    final comma = t.indexOf(', ');
+    if (t.length > 18 && comma > 3) t = t.substring(0, comma);
+    return t.isEmpty ? title : t;
+  }
+
+  /// Best title available right now (no network). [short] trims bucket titles for list rows.
+  String titleNow(String channelId, {bool direct = false, bool short = false}) {
     final ref = refOf(channelId);
     return switch (kindOfId(channelId, direct: direct)) {
       ChatChannelKind.street => communityNow(ref) == null ? 'Street chat' : streetTitle(communityNow(ref)!.name),
-      ChatChannelKind.bucket => _buckets[ref]?.title ?? 'Bucket chat',
+      ChatChannelKind.bucket => _buckets[ref] == null
+          ? 'Bucket chat'
+          : short
+              ? shortBucketTitle(_buckets[ref]!.title)
+              : _buckets[ref]!.title,
       ChatChannelKind.direct => _people[channelId]?.name ?? (channelId == botId ? 'Jugaad Street' : 'Chat'),
       ChatChannelKind.other => channelId,
     };
