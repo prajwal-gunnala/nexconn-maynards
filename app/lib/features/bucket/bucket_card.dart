@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../core/models/models.dart';
 import '../../core/theme/app_theme.dart';
@@ -34,7 +33,7 @@ class BucketCard extends StatelessWidget {
   static const compactWidth = 216.0;
   static const compactHeight = 262.0;
 
-  void _open(BuildContext context) => onTap != null ? onTap!() : context.push('/bucket/${bucket.id}');
+  void _open(BuildContext context) => onTap != null ? onTap!() : openBucket(context, bucket.id);
 
   Widget _photo(double height) {
     final b = bucket;
@@ -89,7 +88,7 @@ class BucketCard extends StatelessWidget {
             if (people.isNotEmpty) ...[AvatarStack(users: people, size: 28), const SizedBox(width: AppSpace.sm)],
             Expanded(
               child: Text(
-                members == 0 ? 'Be the first to join' : b.peopleLine(meId: meId, withFlats: false),
+                members == 0 ? 'Be the first to join' : b.peopleLine(meId: meId, withFlats: false, names: 1),
                 style: AppText.caption.copyWith(color: AppColors.ink, fontWeight: FontWeight.w600, fontSize: 12.5),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -233,16 +232,25 @@ class PastBucketRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final b = bucket;
-    final done = b.status == BucketStatus.completed;
+    final done = b.status != BucketStatus.expired && b.status != BucketStatus.cancelled;
+    final atMarket = b.settleMode == PayMode.atMarket;
     final when = b.cutoffAt == null ? null : _shortDay(b.cutoffAt!);
-    final line = done
-        ? '${b.progress.members} neighbours · ${qtyText(b.progress.filled)} ${plural(b.type == BucketType.trip ? 'kg' : b.unit, b.progress.filled)} bought'
-        : 'Didn\'t fill · holds released';
+    final bought = '${b.progress.members} neighbours · ${qtyText(b.progress.filled)} ${plural(b.type == BucketType.trip ? 'kg' : b.unit, b.progress.filled)} bought';
+    final line = switch (b.status) {
+      BucketStatus.completed || BucketStatus.marketDay when atMarket => 'Met at the market · done',
+      BucketStatus.completed => bought,
+      BucketStatus.marketDay => 'Filled · meeting at the market',
+      BucketStatus.ordered => 'Filled · order sent',
+      BucketStatus.delivering => 'Filled · on its way',
+      BucketStatus.cancelled => 'Cancelled · holds released',
+      BucketStatus.expired => atMarket ? "Didn't fill · nothing to pay" : "Didn't fill · holds released",
+      _ => bought,
+    };
     return Semantics(
       container: true,
       label: '${b.title}, ${b.statusLabel}',
       child: InkWell(
-        onTap: () => context.push('/bucket/${b.id}'),
+        onTap: () => openBucket(context, b.id),
         borderRadius: BorderRadius.circular(AppRadius.photo),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: AppSpace.sm),
@@ -254,15 +262,17 @@ class PastBucketRow extends StatelessWidget {
             const SizedBox(width: AppSpace.md),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(b.title, style: AppText.label.copyWith(fontSize: 14), maxLines: 1, overflow: TextOverflow.ellipsis),
-                const SizedBox(height: 2),
-                Text([?when, b.typeLabel].join(' · '), style: AppText.caption, maxLines: 1),
-                const SizedBox(height: 2),
-                Text(line, style: AppText.caption.copyWith(color: done ? AppColors.save : AppColors.inkMuted), maxLines: 1, overflow: TextOverflow.ellipsis),
+                Text(b.title, style: AppText.label.copyWith(fontSize: 14, height: 1.3), maxLines: 2, overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 4),
+                Row(children: [
+                  Flexible(child: Text([?when, b.typeLabel].join(' · '), style: AppText.caption, maxLines: 1, overflow: TextOverflow.ellipsis)),
+                  const SizedBox(width: AppSpace.sm),
+                  BucketStatusPill(bucket: b),
+                ]),
+                const SizedBox(height: 4),
+                Text(line, style: AppText.caption.copyWith(color: done ? AppColors.save : AppColors.inkMuted), maxLines: 2, overflow: TextOverflow.ellipsis),
               ]),
             ),
-            const SizedBox(width: AppSpace.sm),
-            BucketStatusPill(bucket: b),
           ]),
         ),
       ),

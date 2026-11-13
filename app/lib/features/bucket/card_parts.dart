@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/format.dart';
 import '../../core/images.dart';
@@ -149,16 +150,25 @@ class FactsLine extends StatelessWidget {
     final first = AppText.label.copyWith(fontSize: small ? 12 : 13, color: AppColors.ink);
     final rest = AppText.caption.copyWith(fontSize: small ? 11.5 : 12.5);
     final bar = TextSpan(text: '  |  ', style: rest.copyWith(color: const Color(0xFFCFC7C1), fontWeight: FontWeight.w400));
-    return Text.rich(
-      TextSpan(children: [
-        for (var i = 0; i < facts.length; i++) ...[
-          if (i > 0) bar,
-          TextSpan(text: facts[i], style: i == 0 ? first : rest),
-        ],
-      ]),
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-    );
+    TextSpan span(int n) => TextSpan(children: [
+          for (var i = 0; i < n; i++) ...[
+            if (i > 0) bar,
+            TextSpan(text: facts[i], style: i == 0 ? first : rest),
+          ],
+        ]);
+    // Show only the facts that fit whole; never cut one in half.
+    return LayoutBuilder(builder: (context, c) {
+      var n = facts.length;
+      final scaler = MediaQuery.textScalerOf(context);
+      while (n > 1) {
+        final tp = TextPainter(text: span(n), textDirection: TextDirection.ltr, maxLines: 1, textScaler: scaler)..layout();
+        final fits = tp.width <= c.maxWidth;
+        tp.dispose();
+        if (fits) break;
+        n--;
+      }
+      return Text.rich(span(n), maxLines: 1, overflow: TextOverflow.ellipsis);
+    });
   }
 }
 
@@ -318,6 +328,13 @@ class CardProgress extends StatelessWidget {
         color: bucket.isLive ? AppColors.brand : AppColors.save,
         track: AppColors.brandTint,
       );
+}
+
+/// Opens a bucket, dropping keyboard focus first so a search field doesn't grab
+/// it again (and reopen the keyboard over the tabs) when the user comes back.
+void openBucket(BuildContext context, String id) {
+  FocusManager.instance.primaryFocus?.unfocus();
+  context.push('/bucket/$id');
 }
 
 /// Tinted box that pulses gently while content loads.

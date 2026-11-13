@@ -273,7 +273,7 @@ class _StreetHomeScreenState extends State<StreetHomeScreen> {
           const SizedBox(height: AppSpace.md),
           pad(const BucketExplainer()),
           HomeSectionHeader('Join your neighbours',
-              subtitle: live.isEmpty ? 'Nothing open right now' : 'Closest to filling up. Every person who joins helps the rest.'),
+              subtitle: live.isEmpty ? 'Nothing open right now' : 'Closest to filling up. Every person helps.'),
         ]),
       ),
       if (featured.isEmpty)
@@ -379,7 +379,8 @@ class _StreetHomeScreenState extends State<StreetHomeScreen> {
               const SizedBox(height: AppSpace.lg),
               const Divider(),
               _MenuTile(icon: Icons.receipt_long_outlined, label: 'My orders', onTap: () => Navigator.pop(ctx, '/orders')),
-              _MenuTile(icon: Icons.storefront_outlined, label: 'Vendor dashboard', onTap: () => Navigator.pop(ctx, '/vendor')),
+              if (s.user?.role == 'vendor')
+                _MenuTile(icon: Icons.storefront_outlined, label: 'Vendor dashboard', onTap: () => Navigator.pop(ctx, '/vendor')),
               if (s.isAdmin)
                 _MenuTile(icon: Icons.admin_panel_settings_outlined, label: 'Community admin', onTap: () => Navigator.pop(ctx, '/admin')),
               const Divider(),

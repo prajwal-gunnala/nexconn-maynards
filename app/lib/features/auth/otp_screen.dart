@@ -17,9 +17,12 @@ import '../../widgets/widgets.dart';
 /// redirect (join community, or home). New numbers are asked for a name when
 /// the server answers NAME_REQUIRED.
 class OtpScreen extends StatefulWidget {
-  const OtpScreen({super.key, required this.phone});
+  const OtpScreen({super.key, required this.phone, this.autoSubmit = true});
 
   final String phone;
+
+  /// Verify as soon as the fourth digit lands (off in screenshots).
+  final bool autoSubmit;
 
   @override
   State<OtpScreen> createState() => _OtpScreenState();
@@ -154,7 +157,7 @@ class _OtpScreenState extends State<OtpScreen> {
               error: _error != null,
               onChanged: (v) {
                 setState(() => _error = null);
-                if (v.length == _len && !_needName) _verify();
+                if (v.length == _len && !_needName && widget.autoSubmit) _verify();
               },
             ),
             const SizedBox(height: AppSpace.md),

@@ -250,7 +250,7 @@ class _CommunityCard extends StatelessWidget {
                     Text(c.name, style: AppText.heading, maxLines: 1, overflow: TextOverflow.ellipsis),
                     const SizedBox(height: 2),
                     Text([line, if (c.flats != null) '${c.flats} flats'].where((s) => s.isNotEmpty).join(' · '),
-                        style: AppText.caption, maxLines: 1, overflow: TextOverflow.ellipsis),
+                        style: AppText.caption.copyWith(height: 1.35), maxLines: 2, overflow: TextOverflow.ellipsis),
                     const SizedBox(height: 6),
                     Row(children: [
                       Container(

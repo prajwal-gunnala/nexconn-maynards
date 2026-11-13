@@ -240,17 +240,23 @@ List<Bucket> sortBuckets(Iterable<Bucket> list, BucketSort sort) {
   return out;
 }
 
-/// Client-side search over title, subtitle, vendor, category and type.
+final _wordSplit = RegExp(r'[^a-z0-9]+');
+
+/// Client-side search: every query word must start a word in the title,
+/// subtitle, vendor, category or type (so "rice" finds basmati, not "price").
 List<Bucket> searchBuckets(Iterable<Bucket> list, String query) {
-  final q = query.trim().toLowerCase();
-  if (q.isEmpty) return list.toList();
+  final words = query.trim().toLowerCase().split(_wordSplit).where((w) => w.isNotEmpty).toList();
+  if (words.isEmpty) return list.toList();
   return list.where((b) {
     final cat = AppImages.categories.where((c) => inCategory(b, c.$1)).map((c) => c.$2).join(' ');
-    final hay = [b.title, b.subtitle, b.vendor?.name, b.vendor?.place, b.category, cat, b.typeLabel, b.description]
+    final tokens = [b.title, b.subtitle, b.vendor?.name, b.vendor?.place, b.category, cat, b.typeLabel]
         .whereType<String>()
         .join(' ')
-        .toLowerCase();
-    return q.split(RegExp(r'\s+')).every(hay.contains);
+        .toLowerCase()
+        .split(_wordSplit)
+        .where((t) => t.isNotEmpty)
+        .toList();
+    return words.every((w) => tokens.any((t) => t.startsWith(w)));
   }).toList();
 }
 
@@ -270,8 +276,13 @@ List<Bucket>? applyCardMetadata(List<Bucket> list, String messageId, Map<String,
   return [...list]..[i] = list[i].withLive(progress: p, status: s);
 }
 
-/// `Whole Seer (Vanjaram)` → `Whole Seer`.
-String shortTitle(String title) => title.replaceAll(RegExp(r'\s*\([^)]*\)'), '').trim();
+/// `Whole Seer (Vanjaram)` → `Whole Seer`; `Kasimedu Book & Meet: Whole Paarai` → `Whole Paarai`.
+String shortTitle(String title) {
+  var t = title.replaceAll(RegExp(r'\s*\([^)]*\)'), '').trim();
+  final colon = t.indexOf(': ');
+  if (colon > 0 && colon < t.length - 2) t = t.substring(colon + 2);
+  return t;
+}
 
 /// `Sat 5 am`, `Sun 6:30 am` (local time, lower-case am/pm).
 String whenShort(DateTime t) {
@@ -288,13 +299,13 @@ extension BucketGroup on Bucket {
   }
 
   /// `Meera (A-303), Ravi (C-801) and 4 others are in`.
-  String peopleLine({String? meId, bool withFlats = true}) {
+  String peopleLine({String? meId, bool withFlats = true, int names = 2}) {
     final ppl = people;
     final total = math.max(progress.members, ppl.length);
     if (total == 0) return 'Be the first to join';
     String name(User u) => u.id == meId ? 'You' : (u.unit == null || !withFlats ? u.name : '${u.name} (${u.unit})');
     final mine = ppl.where((u) => u.id == meId).toList();
-    final named = [...mine, ...ppl.where((u) => u.id != meId)].take(2).map(name).toList();
+    final named = [...mine, ...ppl.where((u) => u.id != meId)].take(names).map(name).toList();
     final rest = total - named.length;
     if (rest <= 0) return '${named.join(' and ')} ${named.length == 1 && named.first != 'You' ? 'is' : 'are'} in';
     return '${named.join(', ')} and $rest ${rest == 1 ? 'other' : 'others'} are in';

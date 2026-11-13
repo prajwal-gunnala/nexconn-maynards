@@ -32,6 +32,8 @@ class _BucketsScreenState extends State<BucketsScreen> {
   String? _error;
   BucketSort _sort = BucketSort.closingSoon;
   final _search = TextEditingController();
+  final _searchFocus = FocusNode();
+  final _scroll = ScrollController();
   StreamSubscription<MetadataUpdate>? _metaSub;
 
   @override
@@ -54,6 +56,8 @@ class _BucketsScreenState extends State<BucketsScreen> {
     BucketsFilter.type.removeListener(_onFilter);
     _metaSub?.cancel();
     _search.dispose();
+    _searchFocus.dispose();
+    _scroll.dispose();
     super.dispose();
   }
 
@@ -90,9 +94,14 @@ class _BucketsScreenState extends State<BucketsScreen> {
       ..sort((a, b) => (b.cutoffAt ?? DateTime(0)).compareTo(a.cutoffAt ?? DateTime(0)));
 
     // Inactive tabs stay mounted with tickers off; disable their Heroes so the
-    // `bucket-photo-<id>` tags never clash with the Street tab.
+    // `bucket-photo-<id>` tags never clash with the Street tab, and drop the
+    // search focus so the keyboard can't reopen over the bottom nav.
+    final active = TickerMode.valuesOf(context).enabled;
+    if (!active && _searchFocus.hasFocus) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _searchFocus.unfocus());
+    }
     return HeroMode(
-      enabled: TickerMode.valuesOf(context).enabled,
+      enabled: active,
       child: Scaffold(
         backgroundColor: AppColors.brandTint,
         body: Column(
@@ -102,7 +111,11 @@ class _BucketsScreenState extends State<BucketsScreen> {
               type: type,
               category: cat,
               search: _search,
-              onSearch: () => setState(() {}),
+              focusNode: _searchFocus,
+              onSearch: () {
+                setState(() {});
+                if (_scroll.hasClients) _scroll.jumpTo(0);
+              },
             ),
             Expanded(
               child: Container(
@@ -146,6 +159,8 @@ class _BucketsScreenState extends State<BucketsScreen> {
     final filtered = type != null || cat != null || q.isNotEmpty;
     final what = [if (cat != null) categoryShortLabel(cat), if (type != null) _typeName(type), if (q.isNotEmpty) '"$q"'].join(' · ');
     return ListView(
+      controller: _scroll,
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: const EdgeInsets.only(bottom: AppSpace.xxxl),
       children: [
         Padding(
@@ -235,12 +250,20 @@ String _typeName(BucketType t) => switch (t) {
 };
 
 class _Header extends StatelessWidget {
-  const _Header({required this.subtitle, required this.type, required this.category, required this.search, required this.onSearch});
+  const _Header({
+    required this.subtitle,
+    required this.type,
+    required this.category,
+    required this.search,
+    required this.focusNode,
+    required this.onSearch,
+  });
 
   final String subtitle;
   final BucketType? type;
   final String? category;
   final TextEditingController search;
+  final FocusNode focusNode;
   final VoidCallback onSearch;
 
   @override
@@ -267,8 +290,11 @@ class _Header extends StatelessWidget {
               height: 48,
               child: TextField(
                 controller: search,
+                focusNode: focusNode,
                 textInputAction: TextInputAction.search,
                 onChanged: (_) => onSearch(),
+                onSubmitted: (_) => focusNode.unfocus(),
+                onTapOutside: (_) => focusNode.unfocus(),
                 style: AppText.body,
                 decoration: InputDecoration(
                   hintText: 'Search seer, basmati, pest control…',
@@ -281,7 +307,7 @@ class _Header extends StatelessWidget {
                           icon: const Icon(Icons.close_rounded, size: 20),
                           onPressed: () {
                             search.clear();
-                            FocusScope.of(context).unfocus();
+                            focusNode.unfocus();
                             onSearch();
                           },
                         ),

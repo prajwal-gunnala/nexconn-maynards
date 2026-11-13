@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../core/format.dart';
 import '../../core/models/models.dart';
@@ -66,7 +65,7 @@ List<FeedItem> feedFromBuckets(List<Bucket> live, Map<String, Json> raw, {int ma
       unit: s.user.unit,
       action: action,
       bucket: b,
-      detail: '${shortTitle(b.title)} · ${b.progressCaption}',
+      detail: shortTitle(b.title),
       at: asTime(rawShare?['createdAt']),
     ));
     used.add(b.id);
@@ -185,7 +184,7 @@ class _FeedRow extends StatelessWidget {
     return Semantics(
       button: b != null,
       child: InkWell(
-        onTap: b == null ? null : () => context.push('/bucket/${b.id}'),
+        onTap: b == null ? null : () => openBucket(context, b.id),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(AppSpace.lg, AppSpace.md, AppSpace.md, AppSpace.md),
           child: Row(children: [

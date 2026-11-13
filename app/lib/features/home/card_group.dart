@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../core/format.dart';
 import '../../core/models/models.dart';
@@ -22,7 +21,7 @@ class GroupBucketCard extends StatelessWidget {
     final b = bucket;
     final pct = b.savePercent;
     final price = b.displayPrice;
-    void open() => context.push('/bucket/${b.id}');
+    void open() => openBucket(context, b.id);
     return Semantics(
       container: true,
       label: '${b.peopleLine(meId: meId)}. ${b.goalHeadline}.',
@@ -41,7 +40,7 @@ class GroupBucketCard extends StatelessWidget {
                 if (b.cutoffAt != null) _Closes(cutoff: b.cutoffAt!),
               ]),
               const SizedBox(height: AppSpace.sm),
-              Text(b.peopleLine(meId: meId), style: AppText.label.copyWith(color: AppColors.inkMuted), maxLines: 1, overflow: TextOverflow.ellipsis),
+              Text(b.peopleLine(meId: meId), style: AppText.label.copyWith(color: AppColors.inkMuted, height: 1.35), maxLines: 2, overflow: TextOverflow.ellipsis),
               const SizedBox(height: AppSpace.md),
               Text(b.goalHeadline, style: AppText.title.copyWith(fontSize: 19, height: 1.25)),
               const SizedBox(height: AppSpace.md),
@@ -81,22 +80,22 @@ class GroupBucketCard extends StatelessWidget {
                     ),
                   ]),
                 ),
-                const SizedBox(width: AppSpace.sm),
-                SizedBox(
-                  height: 44,
-                  child: FilledButton(
-                    onPressed: open,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: b.myShare != null ? AppColors.saveTint : AppColors.brand,
-                      foregroundColor: b.myShare != null ? AppColors.save : Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 18),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: Text(b.myShare != null ? "You're in" : 'Join them',
-                        style: AppText.heading.copyWith(fontSize: 14.5, color: b.myShare != null ? AppColors.save : Colors.white)),
-                  ),
-                ),
               ]),
+              const SizedBox(height: AppSpace.md),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: FilledButton(
+                  onPressed: open,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: b.myShare != null ? AppColors.saveTint : AppColors.brand,
+                    foregroundColor: b.myShare != null ? AppColors.save : Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: Text(b.myShare != null ? "You're in · view your share" : 'Join them',
+                      style: AppText.heading.copyWith(fontSize: 15, color: b.myShare != null ? AppColors.save : Colors.white)),
+                ),
+              ),
             ]),
           ),
         ),

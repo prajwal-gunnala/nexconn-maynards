@@ -167,7 +167,6 @@ class TogetherHero extends StatelessWidget {
         const SizedBox(height: AppSpace.lg),
         Row(children: [
           Expanded(
-            flex: 11,
             child: SizedBox(
               height: 48,
               child: FilledButton.icon(
@@ -179,26 +178,27 @@ class TogetherHero extends StatelessWidget {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.photo)),
                 ),
                 icon: const Icon(Icons.add_rounded, size: 20),
-                label: Text('Start a bucket', maxLines: 1, style: AppText.heading.copyWith(color: AppColors.brandDeep, fontSize: 14.5)),
+                label: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text('Start a bucket', maxLines: 1, style: AppText.heading.copyWith(color: AppColors.brandDeep, fontSize: 14.5)),
+                ),
               ),
             ),
           ),
           const SizedBox(width: AppSpace.md),
-          Expanded(
-            flex: 9,
-            child: SizedBox(
-              height: 48,
-              child: OutlinedButton.icon(
-                onPressed: onChat,
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpace.md),
-                  foregroundColor: white,
-                  side: BorderSide(color: Colors.white.withValues(alpha: 0.6)),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.photo)),
-                ),
-                icon: const Icon(Icons.forum_outlined, size: 19),
-                label: Text('Street chat', style: AppText.heading.copyWith(color: white, fontSize: 14.5)),
+          // Compact so "Start a bucket" always fits, even at 360 dp.
+          SizedBox(
+            height: 48,
+            child: OutlinedButton.icon(
+              onPressed: onChat,
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpace.lg),
+                foregroundColor: white,
+                side: BorderSide(color: Colors.white.withValues(alpha: 0.6)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.photo)),
               ),
+              icon: const Icon(Icons.forum_outlined, size: 19),
+              label: Text('Chat', semanticsLabel: 'Open Street chat', style: AppText.heading.copyWith(color: white, fontSize: 14.5)),
             ),
           ),
         ]),
@@ -265,10 +265,10 @@ class StartTypeTiles extends StatelessWidget {
   final void Function(BucketType type) onTap;
 
   static const _types = [
-    (BucketType.split, 'Split', 'One big thing, cut into shares: a whole fish, a goat', Icons.call_split_rounded, Color(0xFFE3F0FA), Color(0xFF1F6FB2)),
-    (BucketType.bulk, 'Bulk', 'Price drops as more join: rice, oil, mangoes', Icons.inventory_2_outlined, Color(0xFFF7EEDD), Color(0xFF9A6A12)),
-    (BucketType.service, 'Service', 'Book a pro for the whole tower: pest control', Icons.handyman_outlined, Color(0xFFE6F5EE), Color(0xFF12804A)),
-    (BucketType.trip, 'Market trip', "One tempo to the mandi with everyone's list", Icons.local_shipping_outlined, Color(0xFFFFF1EC), AppColors.brandDeep),
+    (BucketType.split, 'Split', 'A whole fish or goat, cut into shares', Icons.call_split_rounded, Color(0xFFE3F0FA), Color(0xFF1F6FB2)),
+    (BucketType.bulk, 'Bulk', 'Rice, oil, mangoes: cheaper as more join', Icons.inventory_2_outlined, Color(0xFFF7EEDD), Color(0xFF9A6A12)),
+    (BucketType.service, 'Service', 'One pro for the whole tower', Icons.handyman_outlined, Color(0xFFE6F5EE), Color(0xFF12804A)),
+    (BucketType.trip, 'Market trip', "One tempo, everyone's mandi list", Icons.local_shipping_outlined, Color(0xFFFFF1EC), AppColors.brandDeep),
   ];
 
   @override
@@ -302,7 +302,7 @@ class StartTypeTiles extends StatelessWidget {
                   const SizedBox(height: AppSpace.md),
                   Text(name, style: AppText.heading.copyWith(fontSize: 15)),
                   const SizedBox(height: 2),
-                  Text(line, style: AppText.caption.copyWith(height: 1.35), maxLines: 2, overflow: TextOverflow.ellipsis),
+                  Text(line, style: AppText.caption.copyWith(height: 1.35), maxLines: 3, overflow: TextOverflow.ellipsis),
                 ]),
               ),
             ),

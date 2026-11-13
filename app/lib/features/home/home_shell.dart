@@ -12,14 +12,31 @@ class HomeShell extends StatelessWidget {
 
   final StatefulNavigationShell shell;
 
+  void _goTab(int i) {
+    // Drop any text focus (e.g. Buckets search) so the keyboard can't reopen
+    // over the bottom nav on the new tab.
+    FocusManager.instance.primaryFocus?.unfocus();
+    shell.goBranch(i, initialLocation: i == shell.currentIndex);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: shell,
-      bottomNavigationBar: StreetNavBar(
-        currentIndex: shell.currentIndex,
-        onTab: (i) => shell.goBranch(i, initialLocation: i == shell.currentIndex),
-        onStart: () => context.push('/create'),
+    // Android back on any other tab returns to Street first; back on Street exits.
+    return PopScope(
+      canPop: shell.currentIndex == 0,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && shell.currentIndex != 0) _goTab(0);
+      },
+      child: Scaffold(
+        body: shell,
+        bottomNavigationBar: StreetNavBar(
+          currentIndex: shell.currentIndex,
+          onTab: _goTab,
+          onStart: () {
+            FocusManager.instance.primaryFocus?.unfocus();
+            context.push('/create');
+          },
+        ),
       ),
     );
   }
