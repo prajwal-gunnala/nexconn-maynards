@@ -54,10 +54,13 @@ class ShareMap extends StatelessWidget {
 
 /// "● Open  ● Taken  ● Yours" key under the map.
 class ShareMapLegend extends StatelessWidget {
-  const ShareMapLegend({super.key, required this.open, required this.taken});
+  const ShareMapLegend({super.key, required this.open, required this.taken, this.example});
 
   final int open;
   final int taken;
+
+  /// A taken part, used to explain that the letters are neighbours' initials.
+  final BucketUnit? example;
 
   @override
   Widget build(BuildContext context) {
@@ -71,10 +74,31 @@ class ShareMapLegend extends StatelessWidget {
           ),
         );
     Widget item(Widget d, String t) => Row(mainAxisSize: MainAxisSize.min, children: [d, const SizedBox(width: 6), Text(t, style: AppText.caption)]);
-    return Wrap(spacing: AppSpace.lg, runSpacing: AppSpace.xs, children: [
-      item(dot(AppColors.surface, border: AppColors.brand, dashed: true), '$open open'),
-      item(dot(const Color(0xFFDCE4EA)), '$taken taken'),
-      item(dot(AppColors.brand), 'Your pick'),
+    final ex = example;
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Wrap(spacing: AppSpace.lg, runSpacing: AppSpace.xs, children: [
+        item(dot(AppColors.surface, border: AppColors.brand, dashed: true), '$open open'),
+        item(dot(const Color(0xFFDCE4EA)), '$taken taken'),
+        item(dot(AppColors.brand), 'Your pick'),
+      ]),
+      if (ex?.owner != null) ...[
+        const SizedBox(height: AppSpace.sm),
+        Row(children: [
+          PersonAvatar(name: ex!.owner!.name, size: 18, ring: false),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text.rich(
+              TextSpan(children: [
+                TextSpan(text: 'Letters = who took it · ', style: AppText.caption),
+                TextSpan(
+                  text: '${ex.owner!.initial} is ${ex.owner!.name}${ex.owner!.unit == null ? '' : ', ${ex.owner!.unit}'}',
+                  style: AppText.caption.copyWith(color: AppColors.ink, fontWeight: FontWeight.w600),
+                ),
+              ]),
+            ),
+          ),
+        ]),
+      ],
     ]);
   }
 }

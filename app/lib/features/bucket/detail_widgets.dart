@@ -337,13 +337,25 @@ class _CountdownBuilderState extends State<CountdownBuilder> {
 /// `Closes in 2h 15m` / `Closes Sat 8:00 pm`.
 String closesText(DateTime cutoff, Duration left) {
   if (left.isNegative) return 'Closing now';
-  if (left.inHours >= 24) return 'Closes ${Fmt.dayTime(cutoff)}';
+  if (left.inHours >= 24) return 'Closes ${whenText(cutoff)}';
   return 'Closes in ${Fmt.timeLeft(cutoff).replaceAll(' left', '')}';
 }
 
+/// Displayed clock times are rounded to :00 / :30, the way people set meet
+/// and pickup times (stored times can be a few minutes off).
+DateTime tidyTime(DateTime t) {
+  final l = t.toLocal();
+  final mins = l.hour * 60 + l.minute + (l.second >= 30 ? 1 : 0);
+  final r = ((mins + 15) ~/ 30) * 30;
+  return DateTime(l.year, l.month, l.day).add(Duration(minutes: r));
+}
+
+/// `Sun 15 Nov, 6:00 am` with the time tidied.
+String whenText(DateTime t) => Fmt.dayTime(tidyTime(t));
+
 /// "Sat 8 pm" style short time used in copy.
 String shortWhen(DateTime t) {
-  final l = t.toLocal();
+  final l = tidyTime(t);
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
   final d = DateTime(l.year, l.month, l.day);

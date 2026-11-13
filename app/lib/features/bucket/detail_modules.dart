@@ -183,7 +183,11 @@ class SplitModule extends StatelessWidget {
           ShareMap(bucket: b, selected: draft.unitIds.toSet(), mine: mine, onTap: _tap, enabled: interactive),
           if (fish) ...[
             const SizedBox(height: AppSpace.md),
-            ShareMapLegend(open: open.length, taken: taken),
+            ShareMapLegend(
+              open: open.length,
+              taken: taken,
+              example: b.units.where((u) => u.owner != null && !mine.contains(u.id)).firstOrNull,
+            ),
           ],
         ]),
       ),

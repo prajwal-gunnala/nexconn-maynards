@@ -339,6 +339,19 @@ List<MeetPerson> meetPeople(BucketView v, String? meId) {
   return out;
 }
 
+/// Short name for the collapsed app bar (the full title is in the body):
+/// drops "(1121)", ", 7-share Split" and "Kasimedu Book & Meet:" style prefixes.
+String shortTitle(String title) {
+  var t = title;
+  final colon = t.indexOf(':');
+  if (colon > 0 && colon < t.length - 1) t = t.substring(colon + 1);
+  t = t.replaceAll(RegExp(r'\s*\([^)]*\)'), '');
+  final comma = t.indexOf(',');
+  if (comma > 0) t = t.substring(0, comma);
+  t = t.trim();
+  return t.isEmpty ? title : t;
+}
+
 /// Text copied by "Invite neighbours".
 String inviteText(BucketView v) {
   final b = v.bucket;
@@ -476,7 +489,10 @@ class HeroAppBar extends StatelessWidget {
         title: AnimatedOpacity(
           opacity: isCollapsed ? 1 : 0,
           duration: const Duration(milliseconds: 180),
-          child: Text(b.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+            Text(typeLabel(b), style: AppText.tiny.copyWith(color: AppColors.brandDeep)),
+            Text(shortTitle(b.title), maxLines: 1, overflow: TextOverflow.ellipsis, style: AppText.heading.copyWith(fontSize: 17)),
+          ]),
         ),
         actions: [
           if (onShare != null) circle(Icons.ios_share_rounded, 'Invite neighbours', onShare),

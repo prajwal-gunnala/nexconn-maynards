@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../core/format.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/tokens.dart';
 import '../../widgets/widgets.dart';
@@ -83,7 +82,7 @@ class MeetCard extends StatelessWidget {
                   Text('$market, $place', style: AppText.heading),
                   if (at != null) ...[
                     const SizedBox(height: 2),
-                    Text(Fmt.dayTime(at!), style: AppText.label.copyWith(color: AppColors.brandDeep)),
+                    Text(whenText(at!), style: AppText.label.copyWith(color: AppColors.brandDeep)),
                   ],
                 ]),
               ),

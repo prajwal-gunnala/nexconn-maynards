@@ -113,7 +113,7 @@ class HoldSuccessView extends StatelessWidget {
     ].join(' · ');
     final deliverTitle = b.type == BucketType.service ? 'Team visits ${b.pickupPoint?.toLowerCase() ?? 'your flat'}' : 'Delivered to ${b.pickupPoint ?? 'your gate'}';
     final deliverSub = [
-      if (b.deliverAt != null) Fmt.dayTime(b.deliverAt!),
+      if (b.deliverAt != null) whenText(b.deliverAt!),
       if (b.type != BucketType.service) 'show your OTP',
     ].join(' · ');
 
@@ -150,13 +150,22 @@ class HoldSuccessView extends StatelessWidget {
           const SizedBox(height: AppSpace.xs),
           Center(child: Text('${b.title} · $status', style: AppText.bodyMuted, textAlign: TextAlign.center)),
           const SizedBox(height: AppSpace.xs),
+          const SizedBox(height: AppSpace.sm),
           Center(
-            child: Text('Blocked in your bank, not paid', style: AppText.label.copyWith(color: AppColors.held)),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(color: AppColors.heldTint, borderRadius: BorderRadius.circular(AppRadius.chip)),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(Icons.lock_clock_outlined, size: 16, color: AppColors.held),
+                const SizedBox(width: 6),
+                Text('Held in your bank · not paid yet', style: AppText.label.copyWith(color: AppColors.held, fontWeight: FontWeight.w600)),
+              ]),
+            ),
           ),
           const SizedBox(height: AppSpace.xxl),
           DetailCard(
             child: Column(children: [
-              TimelineStep(done: true, title: 'Held in your bank', sub: 'Just now · from $vpa'),
+              TimelineStep(done: true, nextDone: filled, title: 'Held in your bank', sub: 'Just now · from $vpa'),
               TimelineStep(
                 n: '2',
                 title: filled ? 'Bucket full, order sent' : 'Bucket closes',
@@ -182,15 +191,16 @@ class HoldSuccessView extends StatelessWidget {
                 const SizedBox(height: AppSpace.md),
                 SizedBox(
                   height: 48,
+                  width: double.infinity,
                   child: OutlinedButton.icon(
                     onPressed: copy,
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.brandDeep,
                       backgroundColor: AppColors.surface,
-                      side: const BorderSide(color: AppColors.brand),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      side: const BorderSide(color: AppColors.brand, width: 1.5),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     ),
-                    icon: const Icon(Icons.copy_rounded, size: 18),
+                    icon: const Icon(Icons.ios_share_rounded, size: 20),
                     label: Text('Copy invite for neighbours', style: AppText.label.copyWith(color: AppColors.brandDeep, fontWeight: FontWeight.w700)),
                   ),
                 ),
@@ -210,7 +220,20 @@ class HoldSuccessView extends StatelessWidget {
       ),
       bottomNavigationBar: StickyCta(
         child: Row(children: [
-          Expanded(child: AppButton.ghost(label: 'View bucket', onPressed: () => context.canPop() ? context.pop() : context.go('/bucket/${b.id}'))),
+          Expanded(
+            child: SizedBox(
+              height: 52,
+              child: OutlinedButton(
+                onPressed: () => context.canPop() ? context.pop() : context.go('/bucket/${b.id}'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.brandDeep,
+                  side: const BorderSide(color: AppColors.brand),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+                child: Text('View bucket', style: AppText.heading.copyWith(color: AppColors.brandDeep, fontSize: 15)),
+              ),
+            ),
+          ),
           const SizedBox(width: AppSpace.md),
           Expanded(child: AppButton(label: 'Back to Street', onPressed: () => context.go('/street'))),
         ]),
@@ -221,9 +244,20 @@ class HoldSuccessView extends StatelessWidget {
 
 /// One row of a vertical timeline (✓ done, or a numbered circle).
 class TimelineStep extends StatelessWidget {
-  const TimelineStep({super.key, this.n = '', required this.title, required this.sub, this.done = false, this.last = false});
+  const TimelineStep({
+    super.key,
+    this.n = '',
+    required this.title,
+    required this.sub,
+    this.done = false,
+    this.nextDone = false,
+    this.last = false,
+  });
 
   final String n;
+
+  /// The connector below is green only when the next step is done too.
+  final bool nextDone;
   final String title;
   final String sub;
   final bool done;
@@ -249,7 +283,7 @@ class TimelineStep extends StatelessWidget {
           ),
           if (!last)
             Expanded(
-              child: Container(width: 2, color: done ? AppColors.save.withValues(alpha: 0.4) : AppColors.line, margin: const EdgeInsets.symmetric(vertical: 3)),
+              child: Container(width: 2, color: done && nextDone ? AppColors.save.withValues(alpha: 0.5) : AppColors.line, margin: const EdgeInsets.symmetric(vertical: 3)),
             ),
         ]),
         const SizedBox(width: AppSpace.md),

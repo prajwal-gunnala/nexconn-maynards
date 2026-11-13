@@ -360,59 +360,83 @@ class _HoldScreenState extends State<HoldScreen> {
                 const _Step(n: '1', title: 'Held in your bank now', sub: 'Still your money. Nothing is paid yet.', on: true),
                 _Step(n: '2', title: 'Paid at the final price', sub: paidLine),
                 _Step(n: '3', title: "Released if the bucket doesn't fill", sub: releaseLine, last: true),
-                const Divider(height: AppSpace.xl),
-                Semantics(
-                  button: true,
-                  label: 'Pay from $_vpa. Tap to change',
-                  excludeSemantics: true,
-                  child: InkWell(
-                    onTap: _editVpa,
-                    borderRadius: BorderRadius.circular(10),
-                    child: SizedBox(
-                      height: 48,
-                      child: Row(children: [
-                        Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(color: AppColors.canvas, borderRadius: BorderRadius.circular(10)),
-                          child: const Icon(Icons.account_balance_outlined, size: 20, color: AppColors.ink),
+                const SizedBox(height: AppSpace.lg),
+                // Stand-in for the member's UPI app: the PIN step happens there in the live app.
+                Container(
+                  padding: const EdgeInsets.fromLTRB(AppSpace.md, AppSpace.xs, AppSpace.md, AppSpace.sm),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.line),
+                  ),
+                  child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    Semantics(
+                      button: true,
+                      label: 'Your UPI app, paying from $_vpa. Tap to change',
+                      excludeSemantics: true,
+                      child: InkWell(
+                        onTap: _editVpa,
+                        borderRadius: BorderRadius.circular(10),
+                        child: SizedBox(
+                          height: 52,
+                          child: Row(children: [
+                            Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(color: AppColors.canvas, borderRadius: BorderRadius.circular(10)),
+                              child: const Icon(Icons.account_balance_outlined, size: 20, color: AppColors.ink),
+                            ),
+                            const SizedBox(width: AppSpace.md),
+                            Expanded(
+                              child: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                Text('Your UPI app', style: AppText.tiny),
+                                Text('UPI · $_vpa', style: AppText.label.copyWith(fontWeight: FontWeight.w700), overflow: TextOverflow.ellipsis),
+                              ]),
+                            ),
+                            Text('Change', style: AppText.label.copyWith(color: AppColors.brand)),
+                          ]),
                         ),
-                        const SizedBox(width: AppSpace.md),
-                        Text('From', style: AppText.label.copyWith(color: AppColors.inkMuted)),
-                        const SizedBox(width: AppSpace.sm),
-                        Expanded(child: Text(_vpa, style: AppText.label.copyWith(fontWeight: FontWeight.w700), overflow: TextOverflow.ellipsis)),
-                        Text('Change', style: AppText.label.copyWith(color: AppColors.brand)),
-                      ]),
+                      ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: AppSpace.md),
-                Center(
-                  child: Text(
-                    _authorizing ? 'Authorizing with your bank…' : 'Enter your 6-digit UPI PIN',
-                    style: AppText.label.copyWith(color: AppColors.inkMuted),
-                  ),
-                ),
-                const SizedBox(height: AppSpace.md),
-                PinDots(length: _pin.length, error: _pinError != null, shakeKey: _shake),
-                SizedBox(
-                  height: 28,
-                  child: Center(
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 200),
-                      child: _pinError == null
-                          ? (_authorizing
-                              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.brand))
-                              : const SizedBox.shrink())
-                          : Text(_pinError!, key: ValueKey(_pinError), style: AppText.label.copyWith(color: AppColors.danger)),
+                    const Divider(height: AppSpace.md),
+                    const SizedBox(height: AppSpace.xs),
+                    Text(
+                      _authorizing ? 'Authorizing with your bank…' : 'Enter your 6-digit UPI PIN',
+                      style: AppText.label.copyWith(color: AppColors.inkMuted),
                     ),
-                  ),
-                ),
-                PinPad(
-                  enabled: ready && !_authorizing,
-                  onDigit: _digit,
-                  onDelete: _delete,
-                  onSubmit: _pin.length >= 4 ? _authorize : null,
+                    const SizedBox(height: AppSpace.md),
+                    PinDots(length: _pin.length, error: _pinError != null, shakeKey: _shake),
+                    SizedBox(
+                      height: 26,
+                      child: Center(
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 200),
+                          child: _pinError == null
+                              ? (_authorizing
+                                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.brand))
+                                  : const SizedBox.shrink())
+                              : Text(_pinError!, key: ValueKey(_pinError), style: AppText.label.copyWith(color: AppColors.danger)),
+                        ),
+                      ),
+                    ),
+                    PinPad(
+                      enabled: ready && !_authorizing,
+                      onDigit: _digit,
+                      onDelete: _delete,
+                      onSubmit: _pin.length >= 4 ? _authorize : null,
+                    ),
+                    const SizedBox(height: AppSpace.sm),
+                    Row(children: [
+                      const Icon(Icons.info_outline_rounded, size: 14, color: AppColors.inkMuted),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Demo: in the live app this step opens your UPI app. Your PIN never touches Jugaad Street.',
+                          style: AppText.tiny.copyWith(fontWeight: FontWeight.w500, height: 1.35),
+                        ),
+                      ),
+                    ]),
+                  ]),
                 ),
               ]),
             ),

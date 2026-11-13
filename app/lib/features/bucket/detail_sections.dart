@@ -171,7 +171,7 @@ class SpecStrip extends StatelessWidget {
       BucketType.trip => [
           (Icons.local_shipping_outlined, '${b.capacity ?? b.progress.target} kg tempo'),
           (Icons.flag_outlined, 'Goes at ${fmtQty(view.x.minLoadKg ?? goAt ?? 1)} kg'),
-          (Icons.schedule_rounded, b.deliverAt == null ? '${b.progress.members} in' : 'Back ${Fmt.time(b.deliverAt!)}'),
+          (Icons.schedule_rounded, b.deliverAt == null ? '${b.progress.members} in' : 'Back ${Fmt.time(tidyTime(b.deliverAt!))}'),
         ],
       BucketType.unknown => const [],
     };
@@ -594,7 +594,7 @@ class VendorPromise extends StatelessWidget {
   Widget build(BuildContext context) {
     final b = view.bucket;
     final at = b.pickupPoint ?? 'the gate';
-    final when = b.deliverAt == null ? null : Fmt.dayTime(b.deliverAt!);
+    final when = b.deliverAt == null ? null : whenText(b.deliverAt!);
     final cat = (b.category ?? '').toLowerCase();
     final atMarket = b.settleMode == PayMode.atMarket;
     final (IconData icon, String head) = switch (b.type) {
@@ -617,7 +617,7 @@ class VendorPromise extends StatelessWidget {
             Text(head, style: AppText.label.copyWith(color: AppColors.brandDeep, fontWeight: FontWeight.w700)),
             if (when != null) ...[
               const SizedBox(height: 2),
-              Text(atMarket ? 'Meet ${Fmt.dayTime(view.x.meetAt ?? b.deliverAt!)}' : '${b.type == BucketType.service ? 'Visit' : 'Arrives'} $when',
+              Text(atMarket ? 'Meet ${whenText(view.x.meetAt ?? b.deliverAt!)}' : '${b.type == BucketType.service ? 'Visit' : 'Arrives'} $when',
                   style: AppText.caption.copyWith(color: AppColors.brandDeep.withValues(alpha: 0.8))),
             ],
           ]),
@@ -674,7 +674,7 @@ class DetailCta extends StatelessWidget {
       strip = switch (b.status) {
         BucketStatus.expired || BucketStatus.cancelled => 'This bucket closed without filling',
         BucketStatus.marketDay when view.x.meetAt != null =>
-          'Market day · meet at ${view.x.meetPlace ?? b.pickupPoint ?? 'the gate'}, ${Fmt.dayTime(view.x.meetAt!)}',
+          'Market day · meet at ${view.x.meetPlace ?? b.pickupPoint ?? 'the gate'}, ${whenText(view.x.meetAt!)}',
         BucketStatus.completed => 'Completed · thanks for buying together',
         _ => 'This bucket is closed to new shares',
       };
@@ -701,15 +701,19 @@ class DetailCta extends StatelessWidget {
       final amount = pr.quote(draft);
       final saving = draft.isEmpty ? 0 : pr.savingOf(draft);
       final empty = draft.isEmpty || amount <= 0;
-      final pickWord = switch (b.type) {
-        BucketType.split => isPart(b) ? 'Pick a cut' : 'Pick a $unit',
-        BucketType.trip => 'Add items',
-        _ => 'Choose quantity',
+      final pickHint = switch (b.type) {
+        BucketType.split when atMarket => 'Pick a $unit to book',
+        BucketType.split => isPart(b) ? 'Pick a cut to hold' : 'Pick a $unit to hold',
+        BucketType.trip => 'Add items to hold',
+        _ => 'Choose a quantity',
       };
+      final fromPrice = b.units.isEmpty ? null : b.units.map((u) => u.price).reduce(math.min);
       leading = _Amount(
-        top: empty ? pickWord : Fmt.rupees(amount),
+        top: empty
+            ? (fromPrice != null ? 'from ${Fmt.rupees(fromPrice)}' : b.type == BucketType.trip ? 'No items yet' : Fmt.rupees(0))
+            : Fmt.rupees(amount),
         bottom: empty
-            ? (atMarket ? 'Pay at the market' : 'Nothing is charged now')
+            ? (atMarket ? 'pay at the market' : 'nothing charged now')
             : saving > 0
                 ? 'you save ${Fmt.rupees(saving)}'
                 : (atMarket ? 'pay at the market' : 'held, not paid'),
@@ -718,10 +722,10 @@ class DetailCta extends StatelessWidget {
       );
       final label = atMarket
           ? (draft.unitIds.length > 1 ? 'Book my ${pluralWord(unit)}' : 'Book my $unit')
-          : empty
-              ? 'Hold with UPI'
-              : 'Hold ${Fmt.rupees(amount)}';
-      button = AppButton(label: label, icon: atMarket ? Icons.event_available_rounded : Icons.lock_outline_rounded, onPressed: empty ? null : onJoin);
+          : 'Hold ${Fmt.rupees(amount)}';
+      button = empty
+          ? _DisabledCta(label: pickHint)
+          : AppButton(label: label, icon: atMarket ? Icons.event_available_rounded : Icons.lock_outline_rounded, onPressed: onJoin);
       strip = atMarket
           ? 'No prepayment · pay ${b.vendor?.name.split(' ').first ?? 'the vendor'} when you meet'
           : _finalPriceLine(view, draft) ?? 'Held, not paid · released automatically if it doesn\'t fill';
@@ -768,6 +772,36 @@ class DetailCta extends StatelessWidget {
     return b.type == BucketType.service
         ? 'You pay ${Fmt.rupees(q * next.unitPrice)} if ${plural(next.minQty, unit)} sign up'
         : 'You pay ${Fmt.rupees(q * next.unitPrice)} if ${plural(next.minQty, unit)} is reached';
+  }
+}
+
+/// Readable disabled CTA that says what to do first ("Pick a cut to hold").
+class _DisabledCta extends StatelessWidget {
+  const _DisabledCta({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      enabled: false,
+      label: label,
+      excludeSemantics: true,
+      child: Container(
+        height: 52,
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: AppSpace.lg),
+        decoration: BoxDecoration(color: const Color(0xFFEDEAE7), borderRadius: BorderRadius.circular(14)),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          const Icon(Icons.touch_app_outlined, size: 18, color: Color(0xFF6E6660)),
+          const SizedBox(width: AppSpace.sm),
+          Flexible(
+            child: Text(label, style: AppText.heading.copyWith(fontSize: 15, color: const Color(0xFF5E5751)), maxLines: 1, overflow: TextOverflow.ellipsis),
+          ),
+        ]),
+      ),
+    );
   }
 }
 
