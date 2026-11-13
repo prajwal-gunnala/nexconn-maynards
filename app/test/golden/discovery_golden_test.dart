@@ -182,12 +182,12 @@ void main() {
     test('facts, captions and search', () {
       expect(_b('b_seer').facts, ['5.2 kg', '8 cuts', 'Serves 8 families']);
       expect(_b('b_seer').progressCaption, '6 of 8 cuts');
-      expect(_b('b_basmati').nextTierCaption, '13 kg to ₹88');
+      expect(_b('b_basmati').nextTierCaption, '18 kg to ₹88');
       expect(_b('b_pest').progressCaption, '31 of 50 flats');
       expect(_b('b_trip').progressCaption, '186 of 300 kg booked');
       expect(_b('b_trip').displayPrice, 22);
       expect(_b('b_seer').goalHeadline, '2 cuts left of a whole seer');
-      expect(_b('b_basmati').goalHeadline, "13 kg more and it's ₹88/kg for everyone");
+      expect(_b('b_basmati').goalHeadline, "18 kg more and it's ₹88/kg for everyone");
       expect(_b('b_pest').goalHeadline, "19 more flats and it's ₹340 a flat");
       expect(_b('b_seer').peopleLine(), startsWith('Arjun (B-702), Priya (A-1101) and 4 others'));
       expect(searchBuckets(_buckets(), 'seafood').map((b) => b.id), containsAll(['b_seer', 'b_paarai']));
