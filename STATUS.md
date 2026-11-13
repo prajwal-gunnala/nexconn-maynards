@@ -18,7 +18,7 @@ Deadline: **Nov 22, 23:59 AoE**. Branch `dev`, all local (nothing pushed or publ
   Film stills were mid-generation in Google Flow (`art/candidates/`, project in Flow) when paused.
 
 ## Next (in order)
-1. **Disk**: Gradle build cache cleared with the user's OK (2026-11-13); main disk ~2.6 GB free. Keep big files on /mnt/storage.
+1. **Disk**: all non-browser caches cleared with the user's OK (2026-11-13 ~10:40): Gradle caches, model caches, npm, tracker, pip. Main disk ~19 GB free. Kept: browser caches, Gradle 9.3.1 dist, ~/.pub-cache. First Gradle build re-downloads deps.
 2. Verify on device: splash/icon, new home, first login (fix landed after QA), vendor sign-out, hold sheet at 360.
 3. Regenerate goldens against the re-recorded fixtures (`app/test/fixtures/`, recorded 10:15 from a fresh seed):
    `cd app && flutter test -t golden --run-skipped --update-goldens`.
