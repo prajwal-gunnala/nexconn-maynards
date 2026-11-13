@@ -72,6 +72,7 @@ flutter:
     - assets/images/categories/
     - assets/images/banners/
     - assets/images/onboarding/
+    - assets/brand/
   fonts:
     - family: PlusJakartaSans
       fonts:
