@@ -17,16 +17,19 @@ import 'list_logic.dart';
 /// The photo carries the Hero tag `bucket-photo-<id>` for the detail page;
 /// pass `hero: false` when the same bucket appears twice on one screen.
 class BucketCard extends StatelessWidget {
-  const BucketCard({super.key, required this.bucket, this.hero = true, this.onTap})
+  const BucketCard({super.key, required this.bucket, this.hero = true, this.onTap, this.meId})
       : compact = false;
 
-  const BucketCard.compact({super.key, required this.bucket, this.hero = false, this.onTap})
+  const BucketCard.compact({super.key, required this.bucket, this.hero = false, this.onTap, this.meId})
       : compact = true;
 
   final Bucket bucket;
   final bool compact;
   final bool hero;
   final VoidCallback? onTap;
+
+  /// The viewer, so their own share reads as "You".
+  final String? meId;
 
   static const compactWidth = 216.0;
   static const compactHeight = 262.0;
@@ -61,12 +64,12 @@ class BucketCard extends StatelessWidget {
   Widget _full(BuildContext context) {
     final b = bucket;
     final next = b.nextTierCaption;
-    final people = b.shares.map((s) => s.user).toList();
+    final people = b.people;
     final members = b.progress.members;
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Stack(children: [
         _photo(196),
-        Positioned(left: 0, top: 0, child: TypeRibbon(bucket: b)),
+        Positioned(left: 10, top: 10, child: TypeRibbon(bucket: b)),
         if (b.isLive && b.cutoffAt != null) Positioned(left: 10, bottom: 10, child: CountdownChip(cutoff: b.cutoffAt!)),
         if (b.myShare != null)
           const Positioned(right: 10, top: 10, child: _OnPhotoTag(label: 'You\'re in', icon: Icons.check_circle_rounded)),
@@ -81,9 +84,19 @@ class BucketCard extends StatelessWidget {
           ],
           const SizedBox(height: AppSpace.sm),
           FactsLine(facts: b.facts),
-          const SizedBox(height: AppSpace.sm),
-          CardPrice(bucket: b),
           const SizedBox(height: AppSpace.md),
+          Row(children: [
+            if (people.isNotEmpty) ...[AvatarStack(users: people, size: 28), const SizedBox(width: AppSpace.sm)],
+            Expanded(
+              child: Text(
+                members == 0 ? 'Be the first to join' : b.peopleLine(meId: meId, withFlats: false),
+                style: AppText.caption.copyWith(color: AppColors.ink, fontWeight: FontWeight.w600, fontSize: 12.5),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ]),
+          const SizedBox(height: AppSpace.sm),
           CardProgress(bucket: b),
           const SizedBox(height: 6),
           Row(children: [
@@ -108,16 +121,11 @@ class BucketCard extends StatelessWidget {
               Text(next, style: AppText.caption.copyWith(color: AppColors.save, fontWeight: FontWeight.w700)),
           ]),
           const SizedBox(height: AppSpace.md),
+          const Divider(),
+          const SizedBox(height: AppSpace.md),
           Row(children: [
-            if (people.isNotEmpty) ...[AvatarStack(users: people), const SizedBox(width: AppSpace.sm)],
-            Expanded(
-              child: Text(
-                members == 0 ? 'Be the first to join' : '$members ${members == 1 ? 'neighbour' : 'neighbours'}',
-                style: AppText.caption.copyWith(color: AppColors.ink, fontWeight: FontWeight.w600),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
+            Expanded(child: CardPrice(bucket: b)),
+            const SizedBox(width: AppSpace.sm),
             if (b.isLive)
               JoinPill(onPressed: () => _open(context), joined: b.myShare != null)
             else
@@ -136,7 +144,7 @@ class BucketCard extends StatelessWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Stack(clipBehavior: Clip.none, children: [
           _photo(138),
-          Positioned(left: 0, top: 0, child: TypeRibbon(bucket: b, small: true)),
+          Positioned(left: 8, top: 8, child: TypeRibbon(bucket: b, small: true)),
           if (b.isLive && b.cutoffAt != null) Positioned(left: 8, bottom: 8, child: CountdownChip(cutoff: b.cutoffAt!, small: true)),
           if (b.isLive)
             Positioned(

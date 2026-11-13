@@ -1,27 +1,30 @@
 import 'dart:async';
 
+import 'package:ai_nexconn_chatui_plugin/ai_nexconn_chatui_plugin.dart' show Message;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/api/api_client.dart';
-import '../../core/images.dart';
 import '../../core/models/models.dart';
 import '../../core/nexconn/chat_session.dart';
+import '../../core/nexconn/js_messages.dart';
 import '../../core/nexconn/nexconn_service.dart';
 import '../../core/session/session_store.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/tokens.dart';
-import '../../core/format.dart';
-import '../bucket/bucket_card.dart';
+import '../../widgets/widgets.dart';
 import '../bucket/list_logic.dart';
 import '../community/join_community_screen.dart';
+import 'card_group.dart';
+import 'list_feed.dart';
 import 'list_home_sections.dart';
 
-/// Street home (Licious home pattern): sticky tinted header with the community
-/// and search, banner carousel, "Shop by category", a "Closing soon" rail,
-/// savings, the Street chat entry, every live bucket, and "Start a bucket".
-/// Cards update live from the `js:bucket` chat card metadata.
+/// Street home, people first: who on your street is buying together right now,
+/// the few buckets closest to filling ("Join your neighbours"), what just
+/// happened, and how to start your own. The catalogue lives on the Buckets tab.
+/// Cards and the feed update live from the Street chat (card metadata and
+/// `js:event` messages).
 class StreetHomeScreen extends StatefulWidget {
   const StreetHomeScreen({super.key});
 
@@ -30,16 +33,15 @@ class StreetHomeScreen extends StatefulWidget {
 }
 
 class _StreetHomeScreenState extends State<StreetHomeScreen> {
-  final _search = TextEditingController();
-  final _searchFocus = FocusNode();
   StreamSubscription<MetadataUpdate>? _metaSub;
+  StreamSubscription<Message>? _msgSub;
 
   Community? _community;
   List<Bucket>? _buckets;
+  Map<String, Json> _raw = const {};
+  final List<FeedItem> _liveFeed = [];
   String? _error;
   bool _loading = false;
-
-  String get _query => _search.text.trim();
 
   @override
   void initState() {
@@ -47,17 +49,18 @@ class _StreetHomeScreenState extends State<StreetHomeScreen> {
     _community = context.read<SessionStore>().community;
     _load();
     try {
-      _metaSub = context.read<NexconnService>().metadataUpdates.listen(_onMetadata);
+      final nx = context.read<NexconnService>();
+      _metaSub = nx.metadataUpdates.listen(_onMetadata);
+      _msgSub = nx.messages.listen(_onMessage);
     } catch (_) {
-      // No chat engine (tests, or the plugin failed to load): cards just won't tick live.
+      // No chat engine (tests, or the plugin failed to load): the page still works, just not live.
     }
   }
 
   @override
   void dispose() {
     _metaSub?.cancel();
-    _search.dispose();
-    _searchFocus.dispose();
+    _msgSub?.cancel();
     super.dispose();
   }
 
@@ -71,15 +74,20 @@ class _StreetHomeScreenState extends State<StreetHomeScreen> {
     }
     setState(() => (_loading = true, _error = null));
     try {
-      final results = await Future.wait([api.community(id), api.buckets(id)]);
+      final results = await Future.wait([
+        api.community(id),
+        api.get('/api/communities/$id/buckets', query: {'status': 'live'}),
+      ]);
       if (!mounted) return;
+      final rawList = (results[1] is List ? results[1] as List : const []).whereType<Map>().map((m) => m.cast<String, dynamic>()).toList();
       setState(() {
         _community = results[0] as Community;
-        _buckets = results[1] as List<Bucket>;
+        _raw = {for (final j in rawList) asString(j['id']): j};
+        _buckets = rawList.map(Bucket.fromJson).toList();
       });
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.message);
-    } catch (e) {
+    } catch (_) {
       if (mounted) setState(() => _error = 'Something went wrong. Pull down to try again.');
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -93,10 +101,15 @@ class _StreetHomeScreenState extends State<StreetHomeScreen> {
     if (next != null) setState(() => _buckets = next);
   }
 
-  void _openCategory(String? id) {
-    BucketsFilter.category.value = id;
-    BucketsFilter.type.value = null;
-    context.go('/buckets');
+  void _onMessage(Message m) {
+    if (!mounted || jsTypeOf(m) != JsType.event) return;
+    final sent = m.sentTime;
+    final item = feedFromEvent(jsFields(m), sent == null || sent == 0 ? StreetClock.now() : DateTime.fromMillisecondsSinceEpoch(sent), _buckets ?? const []);
+    if (item == null) return;
+    setState(() {
+      _liveFeed.insert(0, item);
+      if (_liveFeed.length > 3) _liveFeed.removeLast();
+    });
   }
 
   String _streetTitle(String name) {
@@ -105,11 +118,33 @@ class _StreetHomeScreenState extends State<StreetHomeScreen> {
   }
 
   void _openStreetChat() {
-    final s = context.read<SessionStore>();
-    final id = s.streetChannelId;
+    final id = context.read<SessionStore>().streetChannelId;
     if (id == null) return;
-    final title = _streetTitle(_community?.name ?? 'Your');
-    context.push('/chat/group/$id?title=${Uri.encodeComponent(title)}');
+    context.push('/chat/group/$id?title=${Uri.encodeComponent(_streetTitle(_community?.name ?? 'Your'))}');
+  }
+
+  void _seeAll() {
+    BucketsFilter.category.value = null;
+    BucketsFilter.type.value = null;
+    context.go('/buckets');
+  }
+
+  /// Up to three buckets to feature: one per type, closest cutoff first,
+  /// preferring ones the viewer hasn't joined yet.
+  List<Bucket> _featured(List<Bucket> live) {
+    final sorted = sortBuckets(live, BucketSort.closingSoon);
+    final pool = [...sorted.where((b) => b.myShare == null), ...sorted.where((b) => b.myShare != null)];
+    final out = <Bucket>[];
+    for (final b in pool) {
+      if (out.length == 3) break;
+      if (out.any((x) => x.type == b.type)) continue;
+      out.add(b);
+    }
+    for (final b in pool) {
+      if (out.length == 3) break;
+      if (!out.contains(b)) out.add(b);
+    }
+    return out;
   }
 
   @override
@@ -123,18 +158,18 @@ class _StreetHomeScreenState extends State<StreetHomeScreen> {
       _community = s.community;
     }
     // Inactive tabs stay mounted (IndexedStack) with tickers off; keep their
-    // card Heroes out of the way so tags never clash across tabs.
+    // Heroes out of the way so tags never clash across tabs.
     return HeroMode(
       enabled: TickerMode.valuesOf(context).enabled,
       child: Scaffold(
         backgroundColor: AppColors.canvas,
         body: RefreshIndicator(
           color: AppColors.brand,
-          edgeOffset: MediaQuery.paddingOf(context).top + 128,
+          edgeOffset: MediaQuery.paddingOf(context).top + 64,
           onRefresh: _load,
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            slivers: [_header(s), ...(_query.isNotEmpty ? _searchSlivers() : _homeSlivers(s))],
+            slivers: [_header(s), ..._body(s)],
           ),
         ),
       ),
@@ -146,51 +181,37 @@ class _StreetHomeScreenState extends State<StreetHomeScreen> {
     final place = [s.unit, c?.area].whereType<String>().join(' · ');
     return SliverAppBar(
       pinned: true,
-      toolbarHeight: 68,
-      backgroundColor: AppColors.brandTint,
+      toolbarHeight: 64,
+      backgroundColor: AppColors.canvas,
       surfaceTintColor: Colors.transparent,
-      titleSpacing: AppSpace.sm,
-      title: Semantics(
-        button: true,
-        label: 'Community ${c?.name ?? ''}, tap to switch',
-        child: InkWell(
-          borderRadius: BorderRadius.circular(AppRadius.photo),
-          onTap: () => _switchCommunity(s),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpace.sm, vertical: AppSpace.xs),
-            child: Row(
-              children: [
-                const Icon(Icons.location_on_rounded, color: AppColors.brand, size: 26),
-                const SizedBox(width: 6),
-                Flexible(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              c?.name ?? 'Your street',
-                              style: AppText.heading.copyWith(fontSize: 18, fontWeight: FontWeight.w800),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          const Icon(Icons.keyboard_arrow_down_rounded, size: 22, color: AppColors.ink),
-                        ],
-                      ),
-                      if (place.isNotEmpty)
-                        Text(place, style: AppText.caption.copyWith(fontSize: 12.5), maxLines: 1, overflow: TextOverflow.ellipsis),
-                    ],
-                  ),
-                ),
-              ],
+      titleSpacing: AppSpace.gutter,
+      title: Row(children: [
+        const BrandMark(size: 36),
+        const SizedBox(width: AppSpace.sm),
+        Flexible(
+          child: Semantics(
+            button: true,
+            label: 'Community ${c?.name ?? ''}, tap to switch',
+            child: InkWell(
+              borderRadius: BorderRadius.circular(AppRadius.photo),
+              onTap: () => _switchCommunity(s),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpace.xs, vertical: AppSpace.xs),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+                  Row(mainAxisSize: MainAxisSize.min, children: [
+                    Flexible(
+                      child: Text(c?.name ?? 'Your street',
+                          style: AppText.heading.copyWith(fontSize: 17, fontWeight: FontWeight.w800), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    ),
+                    const Icon(Icons.keyboard_arrow_down_rounded, size: 20, color: AppColors.ink),
+                  ]),
+                  if (place.isNotEmpty) Text(place, style: AppText.caption, maxLines: 1, overflow: TextOverflow.ellipsis),
+                ]),
+              ),
             ),
           ),
         ),
-      ),
+      ]),
       actions: [
         Padding(
           padding: const EdgeInsets.only(right: AppSpace.md),
@@ -204,199 +225,97 @@ class _StreetHomeScreenState extends State<StreetHomeScreen> {
                 width: 44,
                 height: 44,
                 alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFF6D9CE)),
-                ),
+                decoration: BoxDecoration(color: AppColors.surface, shape: BoxShape.circle, border: Border.all(color: AppColors.line)),
                 child: Text(s.user?.initial ?? '?', style: AppText.heading.copyWith(color: AppColors.brand)),
               ),
             ),
           ),
         ),
       ],
-      bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(64),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(AppSpace.gutter, 0, AppSpace.gutter, AppSpace.md),
-          child: _SearchField(controller: _search, focusNode: _searchFocus, onChanged: () => setState(() {})),
-        ),
-      ),
     );
   }
 
-  List<Widget> _homeSlivers(SessionStore s) {
+  List<Widget> _body(SessionStore s) {
     final buckets = _buckets;
     if (buckets == null) {
       return [
-        const SliverPadding(
-          padding: EdgeInsets.only(top: AppSpace.lg),
-          sliver: SliverToBoxAdapter(child: HomeSkeleton()),
-        ),
-        if (_error != null)
-          SliverToBoxAdapter(
-            child: ErrorPanel(message: _error!, onRetry: _load),
-          ),
+        const SliverPadding(padding: EdgeInsets.only(top: AppSpace.sm), sliver: SliverToBoxAdapter(child: HomeSkeleton())),
+        if (_error != null) SliverToBoxAdapter(child: ErrorPanel(message: _error!, onRetry: _load)),
       ];
     }
     final c = _community;
-    final live = sortBuckets(buckets.where((b) => b.isLive), BucketSort.closingSoon);
-    final closing = live.where((b) => b.cutoffAt != null).take(5).toList();
-    final counts = <String, int>{for (final (id, _) in AppImages.categories) id: live.where((b) => inCategory(b, id)).length};
-    final members = c?.stats?.members ?? c?.memberCount ?? 0;
-    final saved = c?.stats?.savedThisMonth ?? 0;
-    final latest = live.map((b) => b.latestActivity).whereType<String>().firstOrNull;
-
-    final banners = [
-      HomeBanner(
-        kicker: 'Kasimedu harbour',
-        title: 'Sunday fish run',
-        body: 'Whole seer split eight ways, landed at dawn',
-        image: AppImages.banners[0],
-        fallbackPhoto: AppImages.bucket('seer'),
-        colors: const [Color(0xFF0F4C5C), Color(0xFF1C7C8C)],
-        onTap: () => _openCategory('fish'),
-      ),
-      HomeBanner(
-        kicker: 'Devgad peti',
-        title: 'Mango season',
-        body: 'GI-tagged Alphonso, farm-direct by the dozen',
-        image: AppImages.banners[1],
-        fallbackPhoto: AppImages.bucket('alphonso'),
-        colors: const [Color(0xFFB8590B), Color(0xFFE8961E)],
-        onTap: () => _openCategory('fruits'),
-      ),
-      HomeBanner(
-        kicker: 'This month',
-        title: 'Your tower saved ${Fmt.rupees(saved)}',
-        body: '$members neighbours buying together',
-        image: AppImages.banners[2],
-        fallbackPhoto: AppImages.bucket('koyambedu'),
-        colors: const [Color(0xFF0B7A43), Color(0xFF12A150)],
-        onTap: () => context.go('/wallet'),
-      ),
+    final live = buckets.where((b) => b.isLive).toList();
+    final seen = <String>{};
+    final people = [
+      for (final b in sortBuckets(live, BucketSort.closingSoon))
+        for (final u in b.people)
+          if (seen.add(u.id)) u,
     ];
+    final featured = _featured(live);
+    final feed = [..._liveFeed, ...feedFromBuckets(live, _raw)].take(6).toList();
+    final meId = s.user?.id;
 
-    Widget pad(Widget w, {double top = 0}) => Padding(padding: EdgeInsets.fromLTRB(AppSpace.gutter, top, AppSpace.gutter, 0), child: w);
+    Widget pad(Widget w) => Padding(padding: const EdgeInsets.symmetric(horizontal: AppSpace.gutter), child: w);
 
     return [
       SliverToBoxAdapter(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: AppSpace.lg),
-            BannerCarousel(banners: banners),
-            const HomeSectionHeader('Shop by category', subtitle: 'Everything your street buys together'),
-            CategoryGrid(counts: counts, onTap: _openCategory),
-            if (closing.isNotEmpty) ...[
-              HomeSectionHeader(
-                'Closing soon',
-                subtitle: 'Last call before the cutoff',
-                action: 'See all',
-                onAction: () => _openCategory(null),
-              ),
-              SizedBox(
-                height: BucketCard.compactHeight,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpace.gutter),
-                  itemCount: closing.length,
-                  separatorBuilder: (_, _) => const SizedBox(width: AppSpace.md),
-                  itemBuilder: (_, i) => BucketCard.compact(bucket: closing[i]),
-                ),
-              ),
-            ],
-            pad(
-              SavingsCard(saved: saved, members: members, live: live.length, onTap: () => context.go('/wallet')),
-              top: AppSpace.xxl,
-            ),
-            if (s.streetChannelId != null)
-              pad(
-                StreetChatCard(title: _streetTitle(c?.name ?? 'Your'), members: members, latest: latest, onTap: _openStreetChat),
-                top: AppSpace.md,
-              ),
-            HomeSectionHeader(
-              'Live on your street',
-              subtitle: live.isEmpty ? 'Nothing open right now' : '${live.length} buckets your neighbours are filling',
-            ),
-          ],
-        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const SizedBox(height: AppSpace.xs),
+          pad(TogetherHero(
+            streetName: _streetTitle(c?.name ?? 'Your'),
+            people: people,
+            neighbours: people.length,
+            liveBuckets: live.length,
+            saved: c?.stats?.savedThisMonth ?? 0,
+            onStart: () => context.push('/create'),
+            onChat: s.streetChannelId == null ? null : _openStreetChat,
+          )),
+          const SizedBox(height: AppSpace.md),
+          pad(const BucketExplainer()),
+          HomeSectionHeader('Join your neighbours',
+              subtitle: live.isEmpty ? 'Nothing open right now' : 'Closest to filling up. Every person who joins helps the rest.'),
+        ]),
       ),
-      if (live.isEmpty)
+      if (featured.isEmpty)
         SliverToBoxAdapter(child: pad(_EmptyLive(onStart: () => context.push('/create'))))
       else
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpace.gutter),
           sliver: SliverList.separated(
-            itemCount: live.length,
+            itemCount: featured.length,
             separatorBuilder: (_, _) => const SizedBox(height: AppSpace.lg),
-            itemBuilder: (_, i) => BucketCard(bucket: live[i]),
+            itemBuilder: (_, i) => GroupBucketCard(bucket: featured[i], meId: meId),
           ),
         ),
       SliverToBoxAdapter(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(AppSpace.gutter, AppSpace.xxl, AppSpace.gutter, AppSpace.xxxl),
-          child: StartBucketCard(onTap: () => context.push('/create')),
-        ),
-      ),
-    ];
-  }
-
-  List<Widget> _searchSlivers() {
-    final live = (_buckets ?? const <Bucket>[]).where((b) => b.isLive);
-    final results = sortBuckets(searchBuckets(live, _query), BucketSort.closingSoon);
-    return [
-      SliverToBoxAdapter(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(AppSpace.gutter, AppSpace.lg, AppSpace.gutter, AppSpace.md),
-          child: Text.rich(
-            TextSpan(
-              children: [
-                TextSpan(
-                  text: '${results.length} ${results.length == 1 ? 'bucket' : 'buckets'}',
-                  style: AppText.label.copyWith(fontSize: 14),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          if (live.length > featured.length)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(AppSpace.gutter, AppSpace.md, AppSpace.gutter, 0),
+              child: SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: OutlinedButton(
+                  onPressed: _seeAll,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.brandDeep,
+                    side: const BorderSide(color: Color(0xFFF1CDBF)),
+                    backgroundColor: AppColors.surface,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.photo)),
+                  ),
+                  child: Text('See all ${live.length} buckets', style: AppText.heading.copyWith(color: AppColors.brandDeep, fontSize: 14.5)),
                 ),
-                TextSpan(text: ' for "$_query"', style: AppText.bodyMuted),
-              ],
+              ),
             ),
-          ),
-        ),
+          if (feed.isNotEmpty) ...[
+            const HomeSectionHeader('Happening on your street', subtitle: 'Live from the Street chat'),
+            pad(ActivityFeed(items: feed)),
+          ],
+          const HomeSectionHeader('Start your own bucket', subtitle: 'Anyone can start one. Your street fills it.'),
+          pad(StartTypeTiles(onTap: (_) => context.push('/create'))),
+          const SizedBox(height: AppSpace.xxxl),
+        ]),
       ),
-      if (results.isEmpty)
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpace.xxl),
-            child: Column(
-              children: [
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: const BoxDecoration(color: AppColors.brandTint, shape: BoxShape.circle),
-                  child: const Icon(Icons.search_off_rounded, color: AppColors.brand, size: 32),
-                ),
-                const SizedBox(height: AppSpace.lg),
-                Text('Nobody has started that yet', style: AppText.heading),
-                const SizedBox(height: AppSpace.xs),
-                Text('Start a bucket and your neighbours can join in.', style: AppText.bodyMuted, textAlign: TextAlign.center),
-                const SizedBox(height: AppSpace.lg),
-                TextButton.icon(
-                  onPressed: () => context.push('/create'),
-                  icon: const Icon(Icons.add_rounded),
-                  label: const Text('Start a bucket'),
-                ),
-              ],
-            ),
-          ),
-        )
-      else
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(AppSpace.gutter, 0, AppSpace.gutter, AppSpace.xxxl),
-          sliver: SliverList.separated(
-            itemCount: results.length,
-            separatorBuilder: (_, _) => const SizedBox(height: AppSpace.lg),
-            itemBuilder: (_, i) => BucketCard(bucket: results[i]),
-          ),
-        ),
     ];
   }
 
@@ -487,48 +406,6 @@ class _StreetHomeScreenState extends State<StreetHomeScreen> {
       ),
     );
     if (ok == true && mounted) await context.read<ChatSession>().signOut();
-  }
-}
-
-class _SearchField extends StatelessWidget {
-  const _SearchField({required this.controller, required this.focusNode, required this.onChanged});
-
-  final TextEditingController controller;
-  final FocusNode focusNode;
-  final VoidCallback onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 48,
-      child: TextField(
-        controller: controller,
-        focusNode: focusNode,
-        textInputAction: TextInputAction.search,
-        onChanged: (_) => onChanged(),
-        style: AppText.body,
-        decoration: InputDecoration(
-          hintText: 'Search seer, basmati, pest control…',
-          contentPadding: EdgeInsets.zero,
-          prefixIcon: const Icon(Icons.search_rounded, color: AppColors.inkMuted),
-          suffixIcon: controller.text.isEmpty
-              ? null
-              : IconButton(
-                  tooltip: 'Clear search',
-                  icon: const Icon(Icons.close_rounded, size: 20),
-                  onPressed: () {
-                    controller.clear();
-                    focusNode.unfocus();
-                    onChanged();
-                  },
-                ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFFF3DED5)),
-          ),
-        ),
-      ),
-    );
   }
 }
 

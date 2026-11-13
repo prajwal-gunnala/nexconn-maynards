@@ -92,27 +92,9 @@ void main() {
 
   group('street home', () {
     testWidgets('top', (t) => shoot(t, 'discovery_home_top', const StreetHomeScreen()));
-    testWidgets('rail', (t) => shoot(t, 'discovery_home_rail', const StreetHomeScreen(), act: (t) => _scroll(t, 640)));
-    testWidgets('live list', (t) => shoot(t, 'discovery_home_live', const StreetHomeScreen(), act: (t) => _scroll(t, 1180)));
-    testWidgets('bottom', (t) => shoot(t, 'discovery_home_bottom', const StreetHomeScreen(), act: (t) => _scroll(t, 6000)));
-    for (final i in [1, 2]) {
-      testWidgets('banner ${i + 1}', (t) => shoot(t, 'discovery_home_banner${i + 1}', const StreetHomeScreen(), act: (t) async {
-            for (var k = 0; k < i; k++) {
-              await t.drag(find.byType(PageView), const Offset(-500, 0));
-              await t.pump(const Duration(milliseconds: 600));
-            }
-            await t.runAsync(() async {
-              for (final el in find.byType(Image).evaluate()) {
-                await precacheImage((el.widget as Image).image, el, onError: (_, _) {});
-              }
-            });
-            await t.pump(const Duration(milliseconds: 100));
-          }));
-    }
-    testWidgets('search', (t) => shoot(t, 'discovery_home_search', const StreetHomeScreen(), act: (t) async {
-          await t.enterText(find.byType(TextField).first, 'kasimedu');
-          await t.pump(const Duration(milliseconds: 300));
-        }));
+    testWidgets('join your neighbours', (t) => shoot(t, 'discovery_home_join', const StreetHomeScreen(), act: (t) => _scroll(t, 560)));
+    testWidgets('more cards', (t) => shoot(t, 'discovery_home_cards', const StreetHomeScreen(), act: (t) => _scroll(t, 1150)));
+    testWidgets('feed', (t) => shoot(t, 'discovery_home_feed', const StreetHomeScreen(), act: (t) => _scroll(t, 1660)));
   });
 
   group('buckets tab', () {
@@ -121,9 +103,17 @@ void main() {
       BucketsFilter.category.value = 'fish';
       await shoot(t, 'discovery_buckets_fish', const BucketsScreen());
     });
-    testWidgets('bulk filter', (t) => shoot(t, 'discovery_buckets_bulk', const BucketsScreen(), act: (t) async {
-          await t.tap(find.text('Bulk').first);
+    testWidgets('bulk filter', (t) async {
+      BucketsFilter.type.value = BucketType.bulk;
+      await shoot(t, 'discovery_buckets_bulk', const BucketsScreen());
+    });
+    testWidgets('search', (t) => shoot(t, 'discovery_buckets_search', const BucketsScreen(), act: (t) async {
+          await t.enterText(find.byType(TextField).first, 'kasimedu');
           await t.pump(const Duration(milliseconds: 300));
+        }));
+    testWidgets('type sheet', (t) => shoot(t, 'discovery_buckets_type_sheet', const BucketsScreen(), act: (t) async {
+          await t.tap(find.text('Type'));
+          await t.pump(const Duration(milliseconds: 500));
         }));
     testWidgets('past', (t) => shoot(t, 'discovery_buckets_past', const BucketsScreen(),
         act: (t) => _scroll(t, 6000, on: find.byType(Scrollable).last)));
@@ -139,6 +129,10 @@ void main() {
       expect(_b('b_pest').progressCaption, '31 of 50 flats');
       expect(_b('b_trip').progressCaption, '186 of 300 kg booked');
       expect(_b('b_trip').displayPrice, 22);
+      expect(_b('b_seer').goalHeadline, '2 cuts left of a whole seer');
+      expect(_b('b_basmati').goalHeadline, "13 kg more and it's ₹88/kg for everyone");
+      expect(_b('b_pest').goalHeadline, "19 more flats and it's ₹340 a flat");
+      expect(_b('b_seer').peopleLine(), startsWith('Arjun (B-702), Priya (A-1101) and 4 others'));
       expect(searchBuckets(_buckets(), 'seafood').map((b) => b.id), containsAll(['b_seer', 'b_paarai']));
       expect(_buckets().where((b) => inCategory(b, 'staples')).map((b) => b.id), ['b_basmati']);
     });
@@ -148,7 +142,10 @@ void main() {
     for (var i = 0; i < 3; i++) {
       testWidgets('slide ${i + 1}', (t) => shoot(t, 'discovery_onboarding_${i + 1}', WelcomeScreen(initialPage: i)));
     }
-    testWidgets('phone', (t) => shoot(t, 'discovery_phone', const PhoneScreen()));
+    testWidgets('phone', (t) => shoot(t, 'discovery_phone', const PhoneScreen(), act: (t) async {
+          FocusManager.instance.primaryFocus?.unfocus();
+          await t.pump();
+        }));
     testWidgets('otp filled', (t) => shoot(
           t,
           'discovery_otp',

@@ -1,10 +1,13 @@
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../core/format.dart';
 import '../../core/images.dart';
 import '../../core/models/models.dart';
+import '../../widgets/progress_bar.dart';
 
 /// Clock for countdowns. Tests pin it so screenshots stay stable.
 class StreetClock {
@@ -265,4 +268,75 @@ List<Bucket>? applyCardMetadata(List<Bucket> list, String messageId, Map<String,
   final s = meta['s'] == null ? null : BucketStatus.parse(meta['s']);
   if (p == null && s == null) return null;
   return [...list]..[i] = list[i].withLive(progress: p, status: s);
+}
+
+/// `Whole Seer (Vanjaram)` → `Whole Seer`.
+String shortTitle(String title) => title.replaceAll(RegExp(r'\s*\([^)]*\)'), '').trim();
+
+/// `Sat 5 am`, `Sun 6:30 am` (local time, lower-case am/pm).
+String whenShort(DateTime t) {
+  final l = t.toLocal();
+  final f = l.minute == 0 ? DateFormat('EEE h a') : DateFormat('EEE h:mm a');
+  return f.format(l).replaceAll('AM', 'am').replaceAll('PM', 'pm');
+}
+
+extension BucketGroup on Bucket {
+  /// Distinct people in the bucket, newest share first.
+  List<User> get people {
+    final seen = <String>{};
+    return [for (final s in shares.reversed) if (seen.add(s.user.id)) s.user];
+  }
+
+  /// `Meera (A-303), Ravi (C-801) and 4 others are in`.
+  String peopleLine({String? meId, bool withFlats = true}) {
+    final ppl = people;
+    final total = math.max(progress.members, ppl.length);
+    if (total == 0) return 'Be the first to join';
+    String name(User u) => u.id == meId ? 'You' : (u.unit == null || !withFlats ? u.name : '${u.name} (${u.unit})');
+    final mine = ppl.where((u) => u.id == meId).toList();
+    final named = [...mine, ...ppl.where((u) => u.id != meId)].take(2).map(name).toList();
+    final rest = total - named.length;
+    if (rest <= 0) return '${named.join(' and ')} ${named.length == 1 && named.first != 'You' ? 'is' : 'are'} in';
+    return '${named.join(', ')} and $rest ${rest == 1 ? 'other' : 'others'} are in';
+  }
+
+  /// The shared goal in plain words: what the group needs next.
+  String get goalHeadline {
+    final p = progress;
+    final left = (p.target - p.filled).clamp(0, double.infinity);
+    switch (type) {
+      case BucketType.split:
+        if (settleMode == PayMode.atMarket) {
+          final at = asTime(meet?['at']) ?? cutoffAt;
+          return left > 0
+              ? 'Book your $unit · meet ${at == null ? 'at the market' : whenShort(at)}'
+              : 'All booked · meet ${at == null ? 'at the market' : whenShort(at)}';
+        }
+        return left > 0 ? '${qtyText(left)} ${plural(unit, left)} left of a ${shortTitle(title).toLowerCase()}' : 'Fully claimed';
+      case BucketType.bulk:
+      case BucketType.service:
+        final n = p.nextTier;
+        if (n != null) {
+          return type == BucketType.service
+              ? "${qtyText(n.remaining)} more ${plural(unit, n.remaining)} and it's ${Fmt.rupees(n.unitPrice)} a $unit"
+              : "${qtyText(n.remaining)} $unit more and it's ${Fmt.rupees(n.unitPrice)}/$unit for everyone";
+        }
+        return p.unitPrice == null ? 'Best price unlocked' : 'Best price unlocked: ${Fmt.rupees(p.unitPrice!)}/$unit';
+      case BucketType.trip:
+        return 'Tempo ${p.percentRounded}% full${cutoffAt == null ? '' : ' · leaves ${whenShort(cutoffAt!)}'}';
+      case BucketType.unknown:
+        return progressCaption;
+    }
+  }
+
+  /// Price-tier markers along the progress bar (bulk, service).
+  List<TierMarker> get tierMarkers {
+    final t = progress.target;
+    if (t <= 0 || tiers.isEmpty) return const [];
+    return [
+      for (final tier in tiers)
+        if (tier.minQty <= t)
+          TierMarker(at: tier.minQty / t, label: Fmt.rupees(tier.unitPrice), reached: progress.filled >= tier.minQty),
+    ];
+  }
 }

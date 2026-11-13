@@ -31,6 +31,7 @@ class _BucketsScreenState extends State<BucketsScreen> {
   List<Bucket>? _all;
   String? _error;
   BucketSort _sort = BucketSort.closingSoon;
+  final _search = TextEditingController();
   StreamSubscription<MetadataUpdate>? _metaSub;
 
   @override
@@ -52,6 +53,7 @@ class _BucketsScreenState extends State<BucketsScreen> {
     BucketsFilter.category.removeListener(_onFilter);
     BucketsFilter.type.removeListener(_onFilter);
     _metaSub?.cancel();
+    _search.dispose();
     super.dispose();
   }
 
@@ -80,7 +82,10 @@ class _BucketsScreenState extends State<BucketsScreen> {
     final cat = BucketsFilter.category.value;
     final all = _all;
     final liveAll = all?.where((b) => b.isLive).toList() ?? const <Bucket>[];
-    final live = sortBuckets(liveAll.where((b) => (type == null || b.type == type) && (cat == null || inCategory(b, cat))), _sort);
+    final live = sortBuckets(
+      searchBuckets(liveAll.where((b) => (type == null || b.type == type) && (cat == null || inCategory(b, cat))), _search.text),
+      _sort,
+    );
     final past = (all ?? const <Bucket>[]).where((b) => !b.isLive).toList()
       ..sort((a, b) => (b.cutoffAt ?? DateTime(0)).compareTo(a.cutoffAt ?? DateTime(0)));
 
@@ -96,6 +101,8 @@ class _BucketsScreenState extends State<BucketsScreen> {
               subtitle: all == null ? (s.community?.name ?? '') : '${liveAll.length} live at ${s.community?.name ?? 'your street'}',
               type: type,
               category: cat,
+              search: _search,
+              onSearch: () => setState(() {}),
             ),
             Expanded(
               child: Container(
@@ -135,8 +142,9 @@ class _BucketsScreenState extends State<BucketsScreen> {
         ],
       );
     }
-    final filtered = type != null || cat != null;
-    final what = [if (cat != null) categoryShortLabel(cat), if (type != null) _typeName(type)].join(' · ');
+    final q = _search.text.trim();
+    final filtered = type != null || cat != null || q.isNotEmpty;
+    final what = [if (cat != null) categoryShortLabel(cat), if (type != null) _typeName(type), if (q.isNotEmpty) '"$q"'].join(' · ');
     return ListView(
       padding: const EdgeInsets.only(bottom: AppSpace.xxxl),
       children: [
@@ -170,6 +178,7 @@ class _BucketsScreenState extends State<BucketsScreen> {
             onAction: () => context.push('/create'),
             secondary: filtered ? 'Show everything' : null,
             onSecondary: () {
+              setState(_search.clear);
               BucketsFilter.category.value = null;
               BucketsFilter.type.value = null;
             },
@@ -178,7 +187,7 @@ class _BucketsScreenState extends State<BucketsScreen> {
           for (final b in live)
             Padding(
               padding: const EdgeInsets.fromLTRB(AppSpace.gutter, AppSpace.md, AppSpace.gutter, AppSpace.xs),
-              child: BucketCard(bucket: b),
+              child: BucketCard(bucket: b, meId: context.read<SessionStore>().user?.id),
             ),
         if (past.isNotEmpty) ...[
           Padding(
@@ -226,11 +235,13 @@ String _typeName(BucketType t) => switch (t) {
 };
 
 class _Header extends StatelessWidget {
-  const _Header({required this.subtitle, required this.type, required this.category});
+  const _Header({required this.subtitle, required this.type, required this.category, required this.search, required this.onSearch});
 
   final String subtitle;
   final BucketType? type;
   final String? category;
+  final TextEditingController search;
+  final VoidCallback onSearch;
 
   @override
   Widget build(BuildContext context) {
@@ -252,7 +263,35 @@ class _Header extends StatelessWidget {
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpace.gutter),
-            child: _TypeSegments(value: type, onChanged: (t) => BucketsFilter.type.value = t),
+            child: SizedBox(
+              height: 48,
+              child: TextField(
+                controller: search,
+                textInputAction: TextInputAction.search,
+                onChanged: (_) => onSearch(),
+                style: AppText.body,
+                decoration: InputDecoration(
+                  hintText: 'Search seer, basmati, pest control…',
+                  contentPadding: EdgeInsets.zero,
+                  prefixIcon: const Icon(Icons.search_rounded, color: AppColors.inkMuted),
+                  suffixIcon: search.text.isEmpty
+                      ? null
+                      : IconButton(
+                          tooltip: 'Clear search',
+                          icon: const Icon(Icons.close_rounded, size: 20),
+                          onPressed: () {
+                            search.clear();
+                            FocusScope.of(context).unfocus();
+                            onSearch();
+                          },
+                        ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.photo),
+                    borderSide: const BorderSide(color: Color(0xFFF3DED5)),
+                  ),
+                ),
+              ),
+            ),
           ),
           const SizedBox(height: AppSpace.md),
           SizedBox(
@@ -261,6 +300,8 @@ class _Header extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: AppSpace.gutter),
               children: [
+                _TypeChip(value: type),
+                Container(width: 1, margin: const EdgeInsets.fromLTRB(0, 10, AppSpace.sm, 10), color: const Color(0xFFF1CDBF)),
                 _CategoryChip(id: null, label: 'All', selected: category == null),
                 for (final (id, _) in AppImages.categories) _CategoryChip(id: id, label: categoryShortLabel(id), selected: category == id),
               ],
@@ -273,58 +314,92 @@ class _Header extends StatelessWidget {
   }
 }
 
-class _TypeSegments extends StatelessWidget {
-  const _TypeSegments({required this.value, required this.onChanged});
+/// Selected chips everywhere: brand fill, white text.
+BoxDecoration _chipDecoration(bool selected) => BoxDecoration(
+      color: selected ? AppColors.brand : AppColors.surface,
+      borderRadius: BorderRadius.circular(AppRadius.chip),
+      border: Border.all(color: selected ? AppColors.brand : const Color(0xFFF3DED5)),
+    );
+
+/// "Type ▾" chip: picks Split / Bulk / Service / Market trip from a sheet.
+class _TypeChip extends StatelessWidget {
+  const _TypeChip({required this.value});
 
   final BucketType? value;
-  final ValueChanged<BucketType?> onChanged;
+
+  Future<void> _pick(BuildContext context) async {
+    const opts = <(BucketType?, String, String)>[
+      (null, 'All types', 'Everything live on your street'),
+      (BucketType.split, 'Split', 'One big thing, cut into shares'),
+      (BucketType.bulk, 'Bulk', 'Price drops as more neighbours join'),
+      (BucketType.service, 'Service', 'One pro for the whole tower'),
+      (BucketType.trip, 'Market trip', "One tempo with everyone's list"),
+    ];
+    final picked = await showModalBottomSheet<(BucketType?,)>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(AppSpace.gutter, 0, AppSpace.gutter, AppSpace.sm),
+              child: Text('Bucket type', style: AppText.title.copyWith(fontSize: 18)),
+            ),
+            for (final (t, label, line) in opts)
+              ListTile(
+                minTileHeight: 56,
+                contentPadding: const EdgeInsets.symmetric(horizontal: AppSpace.gutter),
+                title: Text(label, style: AppText.heading.copyWith(fontSize: 15)),
+                subtitle: Text(line, style: AppText.caption),
+                trailing: Icon(
+                  t == value ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                  color: t == value ? AppColors.brand : const Color(0xFFD6CDC7),
+                ),
+                onTap: () => Navigator.pop(ctx, (t,)),
+              ),
+            const SizedBox(height: AppSpace.sm),
+          ],
+        ),
+      ),
+    );
+    if (picked != null) BucketsFilter.type.value = picked.$1;
+  }
 
   @override
   Widget build(BuildContext context) {
-    const opts = <(BucketType?, String)>[
-      (null, 'All'),
-      (BucketType.split, 'Split'),
-      (BucketType.bulk, 'Bulk'),
-      (BucketType.service, 'Service'),
-      (BucketType.trip, 'Market trip'),
-    ];
-    return Container(
-      height: 44,
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.photo),
-        border: Border.all(color: const Color(0xFFF3DED5)),
-      ),
-      child: Row(
-        children: [
-          for (final (t, label) in opts)
-            Expanded(
-              flex: label.length + 4,
-              child: Semantics(
-                selected: value == t,
-                button: true,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => onChanged(t),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    curve: Curves.easeOut,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: value == t ? AppColors.brand : Colors.transparent,
-                      borderRadius: BorderRadius.circular(9),
-                    ),
-                    child: Text(
-                      label,
-                      maxLines: 1,
-                      style: AppText.label.copyWith(color: value == t ? Colors.white : AppColors.ink, fontSize: 13),
-                    ),
-                  ),
-                ),
-              ),
+    final on = value != null;
+    final fg = on ? Colors.white : AppColors.ink;
+    final label = switch (value) {
+      null => 'Type',
+      BucketType.trip => 'Market trip',
+      final t => t.name[0].toUpperCase() + t.name.substring(1),
+    };
+    return Padding(
+      padding: const EdgeInsets.only(right: AppSpace.sm),
+      child: Semantics(
+        button: true,
+        selected: on,
+        label: 'Bucket type: ${on ? label : 'all'}',
+        excludeSemantics: true,
+        child: InkWell(
+          customBorder: const StadiumBorder(),
+          onTap: () => _pick(context),
+          child: Ink(
+            decoration: _chipDecoration(on),
+            padding: const EdgeInsets.fromLTRB(12, 0, 8, 0),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.tune_rounded, size: 16, color: fg),
+                const SizedBox(width: 6),
+                Text(label, style: AppText.label.copyWith(color: fg)),
+                Icon(Icons.keyboard_arrow_down_rounded, size: 18, color: fg),
+              ],
             ),
-        ],
+          ),
+        ),
       ),
     );
   }
@@ -345,35 +420,32 @@ class _CategoryChip extends StatelessWidget {
       child: Semantics(
         selected: selected,
         button: true,
-        child: Material(
-          color: selected ? AppColors.ink : AppColors.surface,
-          shape: StadiumBorder(side: BorderSide(color: selected ? AppColors.ink : const Color(0xFFF3DED5))),
-          child: InkWell(
-            customBorder: const StadiumBorder(),
-            onTap: () => BucketsFilter.category.value = id,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(4, 4, 14, 4),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
+        child: InkWell(
+          customBorder: const StadiumBorder(),
+          onTap: () => BucketsFilter.category.value = id,
+          child: Ink(
+            decoration: _chipDecoration(selected),
+            padding: EdgeInsets.fromLTRB(id == null ? 14 : 4, 4, 14, 4),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (id != null) ...[
                   Container(
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(shape: BoxShape.circle, color: tint),
                     child: ClipOval(
-                      child: id == null
-                          ? Icon(icon, size: 18, color: AppColors.brand)
-                          : Image.asset(
-                              AppImages.category(id!),
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, _, _) => Icon(icon, size: 18, color: AppColors.ink.withValues(alpha: 0.6)),
-                            ),
+                      child: Image.asset(
+                        AppImages.category(id!),
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => Icon(icon, size: 18, color: AppColors.ink.withValues(alpha: 0.6)),
+                      ),
                     ),
                   ),
                   const SizedBox(width: AppSpace.sm),
-                  Text(label, style: AppText.label.copyWith(color: selected ? Colors.white : AppColors.ink)),
                 ],
-              ),
+                Text(label, style: AppText.label.copyWith(color: selected ? Colors.white : AppColors.ink)),
+              ],
             ),
           ),
         ),

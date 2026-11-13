@@ -115,7 +115,7 @@ class _JoinCommunityScreenState extends State<JoinCommunityScreen> {
               children: [
                 Semantics(header: true, child: Text('Find your community', style: AppText.display)),
                 const SizedBox(height: AppSpace.sm),
-                Text('Your society, street, office or hostel. Everyone there buys together in one Street chat.', style: AppText.bodyMuted),
+                Text('Everyone in your society buys together in one Street chat.', style: AppText.bodyMuted),
                 const SizedBox(height: AppSpace.xl),
                 TextField(
                   controller: _q,

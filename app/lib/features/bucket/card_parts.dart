@@ -64,10 +64,10 @@ class TypeRibbon extends StatelessWidget {
     final label = atMarket ? 'Book & meet' : bucket.typeLabel;
     final live = bucket.isLive;
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: small ? 8 : 10, vertical: small ? 3 : 4),
+      padding: EdgeInsets.symmetric(horizontal: small ? 8 : 10, vertical: small ? 3 : 5),
       decoration: BoxDecoration(
         color: !live ? AppColors.released : (atMarket ? AppColors.held : AppColors.brand),
-        borderRadius: const BorderRadius.only(bottomRight: Radius.circular(10)),
+        borderRadius: BorderRadius.circular(AppRadius.chip),
       ),
       child: Text(label, style: AppText.tiny.copyWith(color: Colors.white, fontWeight: FontWeight.w700, fontSize: small ? 10.5 : 11)),
     );

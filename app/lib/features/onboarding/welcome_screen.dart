@@ -30,7 +30,7 @@ class _Slide {
 const _slides = [
   _Slide('Wholesale prices for your whole street',
       'Start a bucket for a whole fish, a sack of rice or a pest-control visit. Neighbours claim their share in your society chat.'),
-  _Slide('Your money is held, never paid, until the bucket fills',
+  _Slide('Your money is only held, not paid, until the bucket fills',
       'We block your share with UPI. If the bucket fills, it goes to the vendor. If it doesn\'t, it comes straight back.'),
   _Slide('One order, one delivery to your gate',
       'The vendor gets one order with every flat on it, packs it, and drops it at your gate. You collect with a code.'),
@@ -72,7 +72,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             height: 56,
             child: Row(children: [
               const SizedBox(width: AppSpace.gutter),
-              const _Wordmark(),
+              const BrandWordmark(size: 32),
               const Spacer(),
               AnimatedOpacity(
                 opacity: _last ? 0 : 1,
@@ -167,23 +167,5 @@ class _SlideView extends StatelessWidget {
         const SizedBox(height: AppSpace.xl),
       ]),
     );
-  }
-}
-
-class _Wordmark extends StatelessWidget {
-  const _Wordmark();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(mainAxisSize: MainAxisSize.min, children: [
-      Container(
-        width: 28,
-        height: 28,
-        decoration: BoxDecoration(color: AppColors.brand, borderRadius: BorderRadius.circular(8)),
-        child: const Icon(Icons.shopping_basket_rounded, color: Colors.white, size: 17),
-      ),
-      const SizedBox(width: AppSpace.sm),
-      Text('Jugaad Street', style: AppText.heading.copyWith(fontWeight: FontWeight.w800)),
-    ]);
   }
 }

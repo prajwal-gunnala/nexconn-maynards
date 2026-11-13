@@ -63,7 +63,7 @@ export class JugaadService {
     const b = this.store.bucket(s.bucketId);
     const base = {
       id: s.id, bucketId: s.bucketId, user: s.user, qty: s.qty, qtyLabel: b ? P.qtyLabel(b, s) : '',
-      unitIds: s.unitIds, items: s.items, options: s.options, payMode: s.payMode, status: s.status,
+      unitIds: s.unitIds, items: s.items, options: s.options, payMode: s.payMode, status: s.status, createdAt: s.createdAt,
     };
     if (!own) return base;
     return {
