@@ -52,3 +52,4 @@ app.*.map.json
 
 # screenshot test output (review artefacts)
 /test/golden/shots/
+/test/golden/shots
