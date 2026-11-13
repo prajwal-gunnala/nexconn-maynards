@@ -176,9 +176,9 @@ class _HoldSuccessViewState extends State<HoldSuccessView> {
       if (next != null) '${plural(next.remaining, unit)} to ${Fmt.rupees(next.unitPrice)}/$unit',
       if (next == null && b.type == BucketType.split && left > 0) '${plural(left, unit)} still open',
     ].join(' · ');
-    final deliverTitle = b.type == BucketType.service ? 'Team visits ${b.pickupPoint?.toLowerCase() ?? 'your flat'}' : 'Delivered to ${b.pickupPoint ?? 'your gate'}';
+    final deliverTitle = b.type == BucketType.service ? 'Team visits ${b.pickupPoint?.toLowerCase() ?? 'your flat'}' : 'Pickup at ${b.pickupPoint ?? 'your gate'}';
     final deliverSub = [
-      if (b.deliverAt != null) whenText(b.deliverAt!),
+      if (b.deliverAt != null) b.type == BucketType.service ? whenText(b.deliverAt!) : pickupWindow(b.deliverAt!),
       if (b.type != BucketType.service) 'show your OTP',
     ].join(' · ');
 
@@ -211,7 +211,7 @@ class _HoldSuccessViewState extends State<HoldSuccessView> {
         child: ListView(padding: const EdgeInsets.fromLTRB(AppSpace.gutter, AppSpace.xxl, AppSpace.gutter, AppSpace.xxl), children: [
           const Center(child: AnimatedCheck()),
           const SizedBox(height: AppSpace.lg),
-          Center(child: LiveText('${Fmt.rupees(amount)} ${paid ? 'paid' : 'held'}', style: AppText.display.copyWith(fontSize: 32))),
+          Center(child: LiveText('${Fmt.rupees(amount)} ${paid ? 'charged' : 'held'}', style: AppText.display.copyWith(fontSize: 32))),
           const SizedBox(height: AppSpace.xs),
           Center(
             child: LiveText(
@@ -232,7 +232,7 @@ class _HoldSuccessViewState extends State<HoldSuccessView> {
                   Icon(paid ? Icons.check_circle_outline_rounded : Icons.lock_clock_outlined, size: 16, color: paid ? AppColors.save : AppColors.held),
                   const SizedBox(width: 6),
                   Text(
-                    paid ? 'Paid at the final price' : 'Held in your bank · not paid yet',
+                    paid ? 'Charged at the final price' : 'Held in your bank · not paid yet',
                     style: AppText.label.copyWith(color: paid ? AppColors.save : AppColors.held, fontWeight: FontWeight.w600),
                   ),
                 ]),

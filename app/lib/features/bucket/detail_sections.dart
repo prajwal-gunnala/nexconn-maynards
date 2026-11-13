@@ -613,7 +613,7 @@ class VendorPromise extends StatelessWidget {
   Widget build(BuildContext context) {
     final b = view.bucket;
     final at = b.pickupPoint ?? 'the gate';
-    final when = b.deliverAt == null ? null : whenText(b.deliverAt!);
+    final when = b.deliverAt == null ? null : (b.type == BucketType.service ? whenText(b.deliverAt!) : pickupWindow(b.deliverAt!));
     final cat = (b.category ?? '').toLowerCase();
     final atMarket = b.settleMode == PayMode.atMarket;
     final (IconData icon, String head) = switch (b.type) {
@@ -636,7 +636,7 @@ class VendorPromise extends StatelessWidget {
             Text(head, style: AppText.label.copyWith(color: AppColors.brandDeep, fontWeight: FontWeight.w700)),
             if (when != null) ...[
               const SizedBox(height: 2),
-              Text(atMarket ? 'Meet ${whenText(view.x.meetAt ?? b.deliverAt!)}' : '${b.type == BucketType.service ? 'Visit' : 'Arrives'} $when',
+              Text(atMarket ? 'Meet ${whenText(view.x.meetAt ?? b.deliverAt!)}' : '${b.type == BucketType.service ? 'Visit' : 'Pickup'} $when',
                   style: AppText.caption.copyWith(color: AppColors.brandDeep.withValues(alpha: 0.8))),
             ],
           ]),

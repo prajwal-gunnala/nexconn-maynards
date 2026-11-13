@@ -19,20 +19,12 @@ import 'package:jugaad_street/features/hold/hold_screen.dart';
 
 import 'harness.dart';
 
-// ---- fixtures with times moved to "now", so countdowns look like a live demo ----------------
+// ---- fixtures, as recorded from a fresh seed --------------------------------------------
+//
+// Times are never shifted: the harness pins AppClock to `fixtureNow` (the moment the fixtures were
+// recorded), so every countdown, cutoff and pickup time matches the other screens.
 
-Map<String, dynamic> bucketFx(String id, {Duration closesIn = const Duration(hours: 6)}) {
-  final j = (fixture('bucket_$id') as Map).cast<String, dynamic>();
-  final cutoff = DateTime.tryParse(j['cutoffAt'] as String? ?? '');
-  if (cutoff == null || j['status'] != 'live') return j;
-  final delta = DateTime.now().add(closesIn).difference(cutoff);
-  String? shift(Object? v) => v is String ? DateTime.parse(v).add(delta).toUtc().toIso8601String() : null;
-  j['cutoffAt'] = shift(j['cutoffAt']);
-  j['deliverAt'] = shift(j['deliverAt']);
-  final meet = j['meet'];
-  if (meet is Map) j['meet'] = {...meet, 'at': shift(meet['at'])};
-  return j;
-}
+Map<String, dynamic> bucketFx(String id) => jsonDecode(jsonEncode(fixture('bucket_$id'))) as Map<String, dynamic>;
 
 Map<String, dynamic> me() => {'id': 'u_ananya', 'name': 'Ananya', 'unit': 'B-1204'};
 
@@ -104,12 +96,12 @@ void main() {
   // ---- detail, every live type ---------------------------------------------------------------
 
   testWidgets('seer split', (t) async {
-    final j = bucketFx('b_seer', closesIn: const Duration(hours: 2, minutes: 40));
+    final j = bucketFx('b_seer');
     await shoot(t, 'detail_seer', const BucketDetailScreen(bucketId: 'b_seer'), overrides: detailOv('b_seer', j));
   });
 
   testWidgets('seer share map', (t) async {
-    final j = bucketFx('b_seer', closesIn: const Duration(hours: 2, minutes: 40));
+    final j = bucketFx('b_seer');
     await shoot(
       t,
       'detail_seer_map',
@@ -120,7 +112,7 @@ void main() {
   });
 
   testWidgets('seer cut selected', (t) async {
-    final j = bucketFx('b_seer', closesIn: const Duration(hours: 2, minutes: 40));
+    final j = bucketFx('b_seer');
     await shoot(
       t,
       'detail_seer_selected',
@@ -136,7 +128,7 @@ void main() {
   });
 
   testWidgets('seer lower page', (t) async {
-    final j = bucketFx('b_seer', closesIn: const Duration(hours: 2, minutes: 40));
+    final j = bucketFx('b_seer');
     await shoot(
       t,
       'detail_seer_lower',
@@ -147,7 +139,7 @@ void main() {
   });
 
   testWidgets('goat tiles', (t) async {
-    final j = bucketFx('b_goat', closesIn: const Duration(days: 1, hours: 18));
+    final j = bucketFx('b_goat');
     await shoot(
       t,
       'detail_goat',
@@ -163,12 +155,12 @@ void main() {
   });
 
   testWidgets('basmati bulk', (t) async {
-    final j = bucketFx('b_basmati', closesIn: const Duration(hours: 17));
+    final j = bucketFx('b_basmati');
     await shoot(t, 'detail_basmati', const BucketDetailScreen(bucketId: 'b_basmati'), overrides: detailOv('b_basmati', j));
   });
 
   testWidgets('basmati tiers', (t) async {
-    final j = bucketFx('b_basmati', closesIn: const Duration(hours: 17));
+    final j = bucketFx('b_basmati');
     await shoot(
       t,
       'detail_basmati_tiers',
@@ -179,7 +171,7 @@ void main() {
   });
 
   testWidgets('alphonso bulk', (t) async {
-    final j = bucketFx('b_alphonso', closesIn: const Duration(hours: 20));
+    final j = bucketFx('b_alphonso');
     await shoot(
       t,
       'detail_alphonso',
@@ -190,7 +182,7 @@ void main() {
   });
 
   testWidgets('pest service live', (t) async {
-    final j = bucketFx('b_pest', closesIn: const Duration(days: 2, hours: 4))..['myShare'] = null;
+    final j = bucketFx('b_pest')..['myShare'] = null;
     j['shares'] = (j['shares'] as List).where((s) => (s as Map)['user']['id'] != 'u_ananya').toList();
     await shoot(
       t,
@@ -202,7 +194,7 @@ void main() {
   });
 
   testWidgets('pest my share', (t) async {
-    final j = bucketFx('b_pest', closesIn: const Duration(days: 2, hours: 4));
+    final j = bucketFx('b_pest');
     await shoot(
       t,
       'detail_pest_myshare',
@@ -213,7 +205,7 @@ void main() {
   });
 
   testWidgets('trip list', (t) async {
-    final j = bucketFx('b_trip', closesIn: const Duration(hours: 9));
+    final j = bucketFx('b_trip');
     await shoot(
       t,
       'detail_trip',
@@ -224,7 +216,7 @@ void main() {
   });
 
   testWidgets('trip list with my items', (t) async {
-    final j = bucketFx('b_trip', closesIn: const Duration(hours: 9));
+    final j = bucketFx('b_trip');
     await shoot(
       t,
       'detail_trip_items',
@@ -254,7 +246,7 @@ void main() {
   });
 
   testWidgets('paarai book and meet', (t) async {
-    final j = bucketFx('b_paarai', closesIn: const Duration(hours: 19));
+    final j = bucketFx('b_paarai');
     await shoot(
       t,
       'detail_paarai',
@@ -269,7 +261,7 @@ void main() {
   });
 
   testWidgets('paarai meet card', (t) async {
-    final j = bucketFx('b_paarai', closesIn: const Duration(hours: 19));
+    final j = bucketFx('b_paarai');
     await shoot(
       t,
       'detail_paarai_meet',
@@ -280,7 +272,7 @@ void main() {
   });
 
   testWidgets('paarai market day check-in', (t) async {
-    final j = bucketFx('b_paarai', closesIn: const Duration(hours: 19));
+    final j = bucketFx('b_paarai');
     j['status'] = 'market_day';
     j['orderId'] = 'JS-2044';
     final units = (j['units'] as List).cast<Map<String, dynamic>>();
@@ -353,7 +345,7 @@ void main() {
   // ---- hold flow -------------------------------------------------------------------------
 
   HoldRequest basmatiReq() => HoldRequest(
-    view: BucketView.fromJson(bucketFx('b_basmati', closesIn: const Duration(hours: 17))),
+    view: BucketView.fromJson(bucketFx('b_basmati')),
     draft: const JoinDraft(qty: 10),
   );
 
@@ -380,30 +372,45 @@ void main() {
     'hold': {'id': 'h_new', 'amount': 960, 'status': 'held', 'vpa': 'ananya@okaxis'},
   };
 
+  // Story (same as the order goldens): basmati is at 82 kg with 6 neighbours; Ananya holds 10 kg
+  // → 92 of 100 kg, 7 in, 8 kg to ₹88. At the cutoff Venkat's 12 kg takes it to 104 kg and it
+  // locks into order JS-2043 (8 neighbours, ₹88/kg, Ananya charged ₹880 of ₹960).
   Map<String, dynamic> basmatiAfter() {
-    final j = bucketFx('b_basmati', closesIn: const Duration(hours: 17));
+    final j = bucketFx('b_basmati');
+    final p = (j['progress'] as Map).cast<String, dynamic>();
+    final filled = (p['filled'] as num) + 10;
     j['progress'] = {
-      ...(j['progress'] as Map),
-      'filled': 97,
-      'members': 8,
-      'percent': 97,
-      'held': 9312,
-      'nextTier': {'minQty': 100, 'unitPrice': 88, 'remaining': 3},
+      ...p,
+      'filled': filled,
+      'members': (p['members'] as num) + 1,
+      'percent': filled,
+      'held': (p['held'] as num) + 960,
+      'nextTier': {'minQty': 100, 'unitPrice': 88, 'remaining': 100 - filled},
     };
+    j['shares'] = [...(j['shares'] as List), heldShare()];
     j['myShare'] = heldShare();
     return j;
   }
 
   Map<String, dynamic> basmatiLocked() {
     final j = basmatiAfter();
+    final p = (j['progress'] as Map).cast<String, dynamic>();
     j['status'] = 'ordered';
-    j['orderId'] = 'JS-2045';
-    j['progress'] = {...(j['progress'] as Map), 'filled': 100, 'members': 9, 'percent': 100, 'held': 0, 'unitPrice': 88, 'nextTier': null};
+    j['orderId'] = 'JS-2043';
+    j['progress'] = {
+      ...p,
+      'filled': (p['filled'] as num) + 12,
+      'members': (p['members'] as num) + 1,
+      'percent': 100,
+      'held': 0,
+      'unitPrice': 88,
+      'nextTier': null,
+    };
     j['myShare'] = {
       ...heldShare(),
       'status': 'captured',
       'finalAmount': 880,
-      'orderId': 'JS-2045',
+      'orderId': 'JS-2043',
       'hold': {'id': 'h_new', 'amount': 960, 'status': 'captured', 'vpa': 'ananya@okaxis'},
     };
     return j;
@@ -522,7 +529,7 @@ void main() {
   });
 
   testWidgets('seer hold sheet', (t) async {
-    final v = BucketView.fromJson(bucketFx('b_seer', closesIn: const Duration(hours: 2, minutes: 40)));
+    final v = BucketView.fromJson(bucketFx('b_seer'));
     final share = {
       ...pendingShare(680),
       'bucketId': 'b_seer',
@@ -550,7 +557,7 @@ void main() {
 
   for (final narrow in [false, true]) {
     testWidgets('paarai booked${narrow ? ' 360' : ''}', (t) async {
-      final j = bucketFx('b_paarai', closesIn: const Duration(hours: 19));
+      final j = bucketFx('b_paarai');
       final after = jsonDecode(jsonEncode(j)) as Map<String, dynamic>;
       final units = (after['units'] as List).cast<Map<String, dynamic>>();
       units[1] = {...units[1], 'owner': me()};
@@ -596,22 +603,14 @@ void main() {
 
   // ---- 360×800 (QA device) -------------------------------------------------------------
 
-  for (final (id, closes) in [
-    ('b_seer', const Duration(hours: 2, minutes: 40)),
-    ('b_goat', const Duration(days: 1, hours: 18)),
-    ('b_basmati', const Duration(hours: 17)),
-    ('b_alphonso', const Duration(hours: 20)),
-    ('b_pest', const Duration(days: 2, hours: 4)),
-    ('b_trip', const Duration(hours: 9)),
-    ('b_paarai', const Duration(days: 1, hours: 19)),
-  ]) {
+  for (final id in ['b_seer', 'b_goat', 'b_basmati', 'b_alphonso', 'b_pest', 'b_trip', 'b_paarai']) {
     final name = id.substring(2);
     testWidgets('$name 360 top', (t) async {
       await shoot(
         t,
         'detail_${name}_360',
         BucketDetailScreen(bucketId: id),
-        overrides: detailOv(id, bucketFx(id, closesIn: closes)),
+        overrides: detailOv(id, bucketFx(id)),
         act: small,
       );
     });
@@ -620,7 +619,7 @@ void main() {
         t,
         'detail_${name}_360_mid',
         BucketDetailScreen(bucketId: id),
-        overrides: detailOv(id, bucketFx(id, closesIn: closes)),
+        overrides: detailOv(id, bucketFx(id)),
         act: (t) async {
           await small(t);
           await scrollDown(t, 480);
@@ -628,6 +627,15 @@ void main() {
       );
     });
   }
+
+  testWidgets('seer 360 page end', (t) async {
+    await shoot(t, 'detail_seer_360_end', const BucketDetailScreen(bucketId: 'b_seer'), overrides: detailOv('b_seer', bucketFx('b_seer')),
+        act: (t) async {
+      await small(t);
+      await t.drag(find.byType(CustomScrollView).first, const Offset(0, -6000));
+      await t.pump(const Duration(milliseconds: 800));
+    });
+  });
 
   testWidgets('prawns 360', (t) async {
     await shoot(t, 'detail_prawns_completed_360', const BucketDetailScreen(bucketId: 'b_past_prawns'), act: small);

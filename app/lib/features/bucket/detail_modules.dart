@@ -294,10 +294,15 @@ class BulkModule extends StatelessWidget {
     final q = draft.qty ?? 0;
 
     final String headline;
+    final withYours = mine > 0 ? 'With your ${plural(mine, unit)}: ' : '';
     if (next != null) {
-      headline = '${plural(next.minQty - after, unit)} more unlocks ${Fmt.rupees(next.unitPrice)}/$unit for all $people of you';
+      headline = mine > 0
+          ? '$withYours${plural(next.minQty - after, unit)} more unlocks ${Fmt.rupees(next.unitPrice)}/$unit for everyone'
+          : '${plural(next.minQty - after, unit)} more unlocks ${Fmt.rupees(next.unitPrice)}/$unit for all $people of you';
     } else if (pr.tiers.isNotEmpty) {
-      headline = 'Best price unlocked: ${Fmt.rupees(pr.unitPriceAt(after))}/$unit for everyone';
+      headline = mine > 0
+          ? '${withYours}best price unlocked, ${Fmt.rupees(pr.unitPriceAt(after))}/$unit for everyone'
+          : 'Best price unlocked: ${Fmt.rupees(pr.unitPriceAt(after))}/$unit for everyone';
     } else {
       headline = '${plural(target - after, unit)} to go';
     }
@@ -309,7 +314,10 @@ class BulkModule extends StatelessWidget {
           Row(children: [
             Text('Group total', style: AppText.label.copyWith(color: AppColors.inkMuted)),
             const Spacer(),
-            LiveText('${fmtQty(p.filled)} of ${plural(target, unit)}', style: AppText.heading),
+            LiveText(
+              mine > 0 ? '${fmtQty(p.filled)} + your ${fmtQty(mine)} of ${plural(target, unit)}' : '${fmtQty(p.filled)} of ${plural(target, unit)}',
+              style: AppText.heading,
+            ),
           ]),
           const SizedBox(height: AppSpace.md),
           _GhostedBar(
@@ -386,20 +394,46 @@ extension on String {
 }
 
 class _GhostedBar extends StatelessWidget {
-  const _GhostedBar({required this.filled, required this.withMine, required this.markers});
+  const _GhostedBar({required this.filled, required this.withMine, required this.markers, this.labels = const []});
 
   final double filled;
   final double withMine;
   final List<TierMarker> markers;
 
+  /// Wider marker captions than [TierMarker] allows: (position 0..1, text, reached).
+  final List<(double, String, bool)> labels;
+
   @override
   Widget build(BuildContext context) {
-    return Stack(children: [
+    return Stack(clipBehavior: Clip.none, children: [
       Padding(
         padding: const EdgeInsets.only(top: 3),
         child: AppProgressBar(value: withMine, height: 10, color: AppColors.brand.withValues(alpha: 0.35)),
       ),
       AppProgressBar(value: filled, height: 10, markers: markers, track: Colors.transparent),
+      if (labels.isNotEmpty)
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: 16,
+          child: LayoutBuilder(builder: (context, c) {
+            const lw = 110.0;
+            return Stack(clipBehavior: Clip.none, children: [
+              for (final (at, text, reached) in labels)
+                Positioned(
+                  left: at >= 0.95 ? c.maxWidth - lw : (c.maxWidth * at - lw / 2).clamp(0.0, c.maxWidth - lw),
+                  width: lw,
+                  child: Text(
+                    text,
+                    maxLines: 1,
+                    textAlign: at >= 0.95 ? TextAlign.right : TextAlign.center,
+                    style: AppText.tiny.copyWith(color: reached ? AppColors.save : AppColors.inkMuted),
+                  ),
+                ),
+            ]);
+          }),
+        ),
     ]);
   }
 }
@@ -525,7 +559,9 @@ class ServiceModule extends StatelessWidget {
                 const SizedBox(width: AppSpace.sm),
                 Expanded(
                   child: LiveText(
-                    'Drops to ${Fmt.rupees(next.unitPrice)} if ${fmtQty(next.minQty - after)} more ${pluralWord(unit)} join',
+                    mine > 0
+                        ? "You'll be $unit #${fmtQty(after)}. ${fmtQty(next.minQty - after)} more ${pluralWord(unit)} unlock ${Fmt.rupees(next.unitPrice)}/$unit."
+                        : 'Drops to ${Fmt.rupees(next.unitPrice)} if ${fmtQty(next.minQty - after)} more ${pluralWord(unit)} join',
                     style: AppText.label.copyWith(color: const Color(0xFF0B7A3B)),
                   ),
                 ),
@@ -747,8 +783,12 @@ class TripModule extends StatelessWidget {
             filled: cap == 0 ? 0 : booked / cap,
             withMine: cap == 0 ? 0 : (booked + myKg) / cap,
             markers: [
-              if (minLoad != null) TierMarker(at: minLoad / cap, label: '${fmtQty(minLoad)} kg', reached: booked + myKg >= minLoad),
-              TierMarker(at: 1, label: '$cap kg', reached: booked + myKg >= cap),
+              if (minLoad != null) TierMarker(at: minLoad / cap, label: '', reached: booked + myKg >= minLoad),
+              TierMarker(at: 1, label: '', reached: booked + myKg >= cap),
+            ],
+            labels: [
+              if (minLoad != null) (minLoad / cap, 'Goes at ${fmtQty(minLoad)} kg', booked + myKg >= minLoad),
+              (1.0, 'Full at $cap kg', booked + myKg >= cap),
             ],
           ),
         ]),

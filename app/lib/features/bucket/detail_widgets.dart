@@ -331,14 +331,14 @@ class _CountdownBuilderState extends State<CountdownBuilder> {
   }
 
   @override
-  Widget build(BuildContext context) => widget.builder(context, widget.cutoff.difference(DateTime.now()));
+  Widget build(BuildContext context) => widget.builder(context, widget.cutoff.difference(AppClock.now()));
 }
 
 /// `Closes in 2h 15m` / `Closes Sat 8:00 pm`.
 String closesText(DateTime cutoff, Duration left) {
   if (left.isNegative) return 'Closing now';
   if (left.inHours >= 24) return 'Closes ${shortWhen(cutoff)}';
-  return 'Closes in ${Fmt.timeLeft(cutoff).replaceAll(' left', '')}';
+  return 'Closes in ${Fmt.timeLeft(cutoff, now: AppClock.now()).replaceAll(' left', '')}';
 }
 
 /// Displayed clock times are rounded to :00 / :30, the way people set meet
@@ -350,13 +350,20 @@ DateTime tidyTime(DateTime t) {
   return DateTime(l.year, l.month, l.day).add(Duration(minutes: r));
 }
 
+/// Pickup window like the server's order window: `Sat 14 Nov · 10:00 am–12:00 pm` (2 hours).
+String pickupWindow(DateTime start) {
+  final a = tidyTime(start);
+  final b = a.add(const Duration(hours: 2));
+  return '${Fmt.day(a)} · ${Fmt.time(a)}–${Fmt.time(b)}';
+}
+
 /// `Sun 15 Nov, 6:00 am` with the time tidied.
 String whenText(DateTime t) => Fmt.dayTime(tidyTime(t));
 
 /// "Sat 8 pm" style short time used in copy.
 String shortWhen(DateTime t) {
   final l = tidyTime(t);
-  final now = DateTime.now();
+  final now = AppClock.now().toLocal();
   final today = DateTime(now.year, now.month, now.day);
   final d = DateTime(l.year, l.month, l.day);
   final diff = d.difference(today).inDays;
