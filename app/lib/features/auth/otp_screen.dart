@@ -85,6 +85,7 @@ class _OtpScreenState extends State<OtpScreen> {
     final session = context.read<SessionStore>();
     final chat = context.read<ChatSession>();
     final messenger = ScaffoldMessenger.of(context);
+    final router = GoRouter.of(context);
     setState(() => (_busy = true, _error = null));
     try {
       final r = await api.verifyOtp(widget.phone, _code.text, name: _needName ? _name.text.trim() : null);
@@ -97,6 +98,8 @@ class _OtpScreenState extends State<OtpScreen> {
           await session.setCommunity(m.community, unit: m.unit, role: m.role);
         }
       } on ApiException catch (_) {}
+      // Go to the right place explicitly: signIn() notified the router before the community was restored.
+      router.go(session.hasCommunity ? '/street' : (session.user?.role == 'vendor' ? '/vendor' : '/community/join'));
       final res = await chat.ensureConnected();
       if (res != null && !res.ok) {
         messenger.showSnackBar(const SnackBar(content: Text('Chat is reconnecting. Your buckets work meanwhile.')));

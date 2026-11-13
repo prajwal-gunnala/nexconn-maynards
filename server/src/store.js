@@ -8,7 +8,8 @@ export function emptyDb() {
     users: {}, sessions: {}, nexconnTokens: {},
     communities: {}, memberships: [], vendors: {},
     buckets: {}, shares: {}, orders: {},
-    counters: { order: 2040 },
+    // Order numbers keep climbing across re-seeds: Nexconn keeps chat history, so a reset would repeat JS-2041.
+    counters: { order: 2040 + (Math.floor(Date.now() / 60000) % 7000) },
   };
 }
 

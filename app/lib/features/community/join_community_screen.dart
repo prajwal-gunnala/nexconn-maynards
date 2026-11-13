@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/api/api_client.dart';
@@ -70,12 +71,17 @@ class _JoinCommunityScreenState extends State<JoinCommunityScreen> {
     final session = context.read<SessionStore>();
     final messenger = ScaffoldMessenger.of(context);
     final nav = Navigator.of(context);
+    final router = GoRouter.of(context);
     setState(() => _busy = true);
     try {
       final r = await context.read<ApiClient>().joinCommunity(c.id, unit: unit);
       final role = asJson(r['membership'])?['role']?.toString() ?? 'member';
       await session.setCommunity(c, unit: unit, role: role);
-      if (widget.popOnJoin && nav.canPop()) nav.pop();
+      if (widget.popOnJoin && nav.canPop()) {
+        nav.pop();
+      } else {
+        router.go('/street');
+      }
     } on ApiException catch (e) {
       messenger.showSnackBar(SnackBar(content: Text(e.message)));
     } finally {

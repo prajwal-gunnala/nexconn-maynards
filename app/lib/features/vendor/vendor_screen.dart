@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/api/api_client.dart';
+import '../../core/nexconn/chat_session.dart';
 import '../../core/format.dart';
 import '../../core/images.dart';
 import '../../core/models/models.dart';
@@ -45,7 +46,9 @@ class _VendorScreenState extends State<VendorScreen> {
 
   Future<void> _refresh() async {
     final f = _load();
-    setState(() => _future = f);
+    setState(() {
+      _future = f;
+    });
     await f;
   }
 
@@ -158,6 +161,24 @@ class _Header extends StatelessWidget {
                 ]),
               ]),
             ),
+            if (!canPop)
+              IconButton(
+                tooltip: 'Sign out',
+                icon: const Icon(Icons.logout_rounded),
+                onPressed: () async {
+                  final ok = await showDialog<bool>(
+                    context: context,
+                    builder: (c) => AlertDialog(
+                      title: const Text('Sign out?'),
+                      actions: [
+                        TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
+                        TextButton(onPressed: () => Navigator.pop(c, true), child: const Text('Sign out')),
+                      ],
+                    ),
+                  );
+                  if (ok == true && context.mounted) await context.read<ChatSession>().signOut();
+                },
+              ),
           ]),
         ),
       ),
