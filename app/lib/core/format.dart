@@ -33,7 +33,7 @@ class Fmt {
 
   /// Countdown to a cutoff: `2h 15m left`, `12m left`, `Closed`.
   static String timeLeft(DateTime cutoff, {DateTime? now}) {
-    final d = cutoff.difference(now ?? DateTime.now());
+    final d = cutoff.difference(now ?? AppClock.now());
     if (d.isNegative || d.inSeconds == 0) return 'Closed';
     if (d.inDays >= 1) return '${d.inDays}d ${d.inHours % 24}h left';
     if (d.inHours >= 1) return '${d.inHours}h ${d.inMinutes % 60}m left';
@@ -43,7 +43,7 @@ class Fmt {
 
   /// Relative time for feeds: `just now`, `5m ago`, `3h ago`, else the day.
   static String ago(DateTime t, {DateTime? now}) {
-    final d = (now ?? DateTime.now()).difference(t);
+    final d = (now ?? AppClock.now()).difference(t);
     if (d.inMinutes < 1) return 'just now';
     if (d.inHours < 1) return '${d.inMinutes}m ago';
     if (d.inDays < 1) return '${d.inHours}h ago';
@@ -52,4 +52,11 @@ class Fmt {
 
   /// Parses an ISO string; null-safe.
   static DateTime? parseTime(Object? v) => v is String ? DateTime.tryParse(v) : null;
+}
+
+/// The one clock for countdowns, "today" and relative times. Real time in the app; the screenshot harness pins it
+/// to the moment the fixtures were recorded so every golden agrees.
+class AppClock {
+  AppClock._();
+  static DateTime Function() now = DateTime.now;
 }

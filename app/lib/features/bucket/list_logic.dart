@@ -13,7 +13,9 @@ import '../../widgets/progress_bar.dart';
 class StreetClock {
   StreetClock._();
 
-  static DateTime Function() now = DateTime.now;
+  /// Delegates to the app-wide [AppClock] (lib/core/format.dart).
+  static DateTime Function() get now => AppClock.now;
+  static set now(DateTime Function() f) => AppClock.now = f;
 }
 
 /// Filters shared between Street home (category grid, banners) and the Buckets tab.

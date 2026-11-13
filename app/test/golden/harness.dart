@@ -23,10 +23,14 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:jugaad_street/core/api/api_client.dart';
+import 'package:jugaad_street/core/format.dart';
 import 'package:jugaad_street/core/nexconn/chat_session.dart';
 import 'package:jugaad_street/core/nexconn/nexconn_service.dart';
 import 'package:jugaad_street/core/session/session_store.dart';
 import 'package:jugaad_street/core/theme/app_theme.dart';
+
+/// The moment test/fixtures were recorded (seed time). Update when fixtures are re-recorded.
+final fixtureNow = DateTime.utc(2026, 11, 13, 4, 43, 29);
 
 const phoneSize = Size(412, 915);
 const phoneDpr = 2.625;
@@ -113,6 +117,9 @@ Future<void> shoot(
   bool wrapInRouter = true,
 }) async {
   await tester.runAsync(loadFonts);
+  // Every golden sees the same moment: when test/fixtures were recorded from a fresh seed (13 Nov 2026, 10:13 IST).
+  AppClock.now = () => fixtureNow;
+  addTearDown(() => AppClock.now = DateTime.now);
   tester.view.physicalSize = phoneSize * phoneDpr;
   tester.view.devicePixelRatio = phoneDpr;
   addTearDown(tester.view.reset);
