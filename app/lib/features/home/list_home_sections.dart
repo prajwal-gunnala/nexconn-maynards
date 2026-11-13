@@ -95,18 +95,27 @@ class TogetherHero extends StatelessWidget {
     super.key,
     required this.streetName,
     required this.people,
-    required this.neighbours,
+    required this.members,
     required this.liveBuckets,
     required this.saved,
+    required this.month,
     required this.onStart,
     this.onChat,
   });
 
   final String streetName;
+
+  /// Everyone in a live bucket right now (from the bucket list).
   final List<User> people;
-  final int neighbours;
+
+  /// Community snapshot from `GET /api/communities/:id` → `stats`, so these
+  /// numbers match the admin screen.
+  final int members;
   final int liveBuckets;
   final int saved;
+
+  /// Month name for "saved together in November".
+  final String month;
   final VoidCallback onStart;
   final VoidCallback? onChat;
 
@@ -114,7 +123,6 @@ class TogetherHero extends StatelessWidget {
   Widget build(BuildContext context) {
     const white = Colors.white;
     final muted = Colors.white.withValues(alpha: 0.82);
-    final extra = neighbours - people.take(6).length;
     return Container(
       padding: const EdgeInsets.fromLTRB(AppSpace.xl, AppSpace.lg, AppSpace.xl, AppSpace.xl),
       decoration: BoxDecoration(
@@ -137,19 +145,18 @@ class TogetherHero extends StatelessWidget {
           child: Text('Buying together on\n$streetName', style: AppText.display.copyWith(color: white, fontSize: 25, height: 1.15)),
         ),
         const SizedBox(height: AppSpace.lg),
-        Row(children: [
-          AvatarStack(users: people, size: 40, max: 6),
-          if (extra > 0) ...[
-            const SizedBox(width: 6),
-            Container(
-              height: 40,
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              alignment: Alignment.center,
-              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(AppRadius.chip)),
-              child: Text('+$extra', style: AppText.label.copyWith(color: white, fontWeight: FontWeight.w800)),
+        if (people.isNotEmpty)
+          Row(children: [
+            AvatarStack(users: people, size: 40, max: 5),
+            const SizedBox(width: AppSpace.md),
+            Expanded(
+              child: Text(
+                '${people.length} ${people.length == 1 ? 'neighbour' : 'neighbours'} in a bucket now',
+                style: AppText.label.copyWith(color: white, height: 1.3),
+                maxLines: 2,
+              ),
             ),
-          ],
-        ]),
+          ]),
         const SizedBox(height: AppSpace.lg),
         Container(
           padding: const EdgeInsets.symmetric(vertical: AppSpace.md),
@@ -158,9 +165,9 @@ class TogetherHero extends StatelessWidget {
             child: Row(children: [
               _Stat(value: '$liveBuckets', label: 'live buckets'),
               VerticalDivider(color: Colors.white.withValues(alpha: 0.25), width: 1, indent: 4, endIndent: 4),
-              _Stat(value: '$neighbours', label: 'neighbours in\nthis week'),
+              _Stat(value: Fmt.number(members), label: 'neighbours on\nJugaad Street'),
               VerticalDivider(color: Colors.white.withValues(alpha: 0.25), width: 1, indent: 4, endIndent: 4),
-              _Stat(value: Fmt.rupees(saved), label: 'saved together\nthis month'),
+              _Stat(value: Fmt.rupees(saved), label: 'saved together\nin $month'),
             ]),
           ),
         ),
@@ -224,7 +231,7 @@ class _Stat extends StatelessWidget {
         const SizedBox(height: 2),
         Text(label,
             textAlign: TextAlign.center,
-            style: AppText.tiny.copyWith(color: Colors.white.withValues(alpha: 0.85), fontWeight: FontWeight.w600, height: 1.25)),
+            style: AppText.caption.copyWith(color: Colors.white.withValues(alpha: 0.85), fontWeight: FontWeight.w600, height: 1.25)),
       ]),
     );
   }

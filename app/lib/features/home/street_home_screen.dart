@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:ai_nexconn_chatui_plugin/ai_nexconn_chatui_plugin.dart' show Message;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/api/api_client.dart';
@@ -264,9 +265,12 @@ class _StreetHomeScreenState extends State<StreetHomeScreen> {
           pad(TogetherHero(
             streetName: _streetTitle(c?.name ?? 'Your'),
             people: people,
-            neighbours: people.length,
-            liveBuckets: live.length,
+            // One community snapshot (same numbers as the admin screen); only
+            // fall back to local counts if the server sent no stats.
+            members: c?.stats?.members ?? c?.memberCount ?? people.length,
+            liveBuckets: c?.stats?.liveBuckets ?? live.length,
             saved: c?.stats?.savedThisMonth ?? 0,
+            month: DateFormat('MMMM').format(StreetClock.now().toLocal()),
             onStart: () => context.push('/create'),
             onChat: s.streetChannelId == null ? null : _openStreetChat,
           )),

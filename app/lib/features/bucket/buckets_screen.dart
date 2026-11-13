@@ -90,7 +90,8 @@ class _BucketsScreenState extends State<BucketsScreen> {
       searchBuckets(liveAll.where((b) => (type == null || b.type == type) && (cat == null || inCategory(b, cat))), _search.text),
       _sort,
     );
-    final past = (all ?? const <Bucket>[]).where((b) => !b.isLive).toList()
+    final pastIds = <String>{};
+    final past = (all ?? const <Bucket>[]).where((b) => !b.isLive && pastIds.add(b.id)).toList()
       ..sort((a, b) => (b.cutoffAt ?? DateTime(0)).compareTo(a.cutoffAt ?? DateTime(0)));
 
     // Inactive tabs stay mounted with tickers off; disable their Heroes so the

@@ -237,7 +237,8 @@ class PastBucketRow extends StatelessWidget {
     final when = b.cutoffAt == null ? null : _shortDay(b.cutoffAt!);
     final bought = '${b.progress.members} neighbours · ${qtyText(b.progress.filled)} ${plural(b.type == BucketType.trip ? 'kg' : b.unit, b.progress.filled)} bought';
     final line = switch (b.status) {
-      BucketStatus.completed || BucketStatus.marketDay when atMarket => 'Met at the market · done',
+      BucketStatus.marketDay when atMarket => 'Meeting at the market today',
+      BucketStatus.completed when atMarket => 'Met at the market · done',
       BucketStatus.completed => bought,
       BucketStatus.marketDay => 'Filled · meeting at the market',
       BucketStatus.ordered => 'Filled · order sent',

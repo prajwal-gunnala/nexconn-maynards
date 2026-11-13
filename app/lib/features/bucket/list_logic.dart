@@ -292,10 +292,11 @@ String whenShort(DateTime t) {
 }
 
 extension BucketGroup on Bucket {
-  /// Distinct people in the bucket, newest share first.
+  /// Distinct people in the bucket, in the order they joined (the same order
+  /// the bucket detail lists them, so names match across screens).
   List<User> get people {
     final seen = <String>{};
-    return [for (final s in shares.reversed) if (seen.add(s.user.id)) s.user];
+    return [for (final s in shares) if (seen.add(s.user.id)) s.user];
   }
 
   /// `Meera (A-303), Ravi (C-801) and 4 others are in`.

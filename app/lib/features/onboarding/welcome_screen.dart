@@ -31,7 +31,7 @@ const _slides = [
   _Slide('Wholesale prices for your whole street',
       'Start a bucket for a whole fish, a sack of rice or a pest-control visit. Neighbours claim their share in your society chat.'),
   _Slide('Your money is only held, not paid, until the bucket fills',
-      'We block your share with UPI. If the bucket fills, it goes to the vendor. If it doesn\'t, it comes straight back.'),
+      'Your money is only held until the bucket fills. Everyone pays the final group price, and anything extra goes straight back.'),
   _Slide('One order, one delivery to your gate',
       'The vendor gets one order with every flat on it, packs it, and drops it at your gate. You collect with a code.'),
 ];

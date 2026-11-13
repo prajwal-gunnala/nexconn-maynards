@@ -18,8 +18,9 @@ import 'package:jugaad_street/features/onboarding/welcome_screen.dart';
 
 import 'harness.dart';
 
-/// Fixture cutoffs were recorded relative to 2026-11-13; pin "now" so countdowns are stable.
-final _now = DateTime.utc(2026, 11, 12, 22, 5);
+/// The seed time the fixtures were recorded at (seer created 5 h before, closing 08:00Z).
+/// Every countdown reads this through `StreetClock`, so shots are stable and match the seed.
+final _now = DateTime.utc(2026, 11, 13, 4, 43, 29);
 
 List<Bucket> _buckets() => (fixture('buckets') as List).map((e) => Bucket.fromJson((e as Map).cast<String, dynamic>())).toList();
 Bucket _b(String id) => _buckets().firstWhere((b) => b.id == id);
@@ -124,7 +125,6 @@ class _PastGallery extends StatelessWidget {
     Bucket with_(String id, String status) => Bucket.fromJson({...raw.firstWhere((j) => j['id'] == id), 'status': status});
     final rows = [
       with_('b_paarai', 'market_day'),
-      with_('b_paarai', 'completed'),
       with_('b_basmati', 'ordered'),
       with_('b_goat', 'delivering'),
       _b('b_past_prawns'),
@@ -189,7 +189,7 @@ void main() {
       expect(_b('b_seer').goalHeadline, '2 cuts left of a whole seer');
       expect(_b('b_basmati').goalHeadline, "18 kg more and it's ₹88/kg for everyone");
       expect(_b('b_pest').goalHeadline, "19 more flats and it's ₹340 a flat");
-      expect(_b('b_seer').peopleLine(), startsWith('Arjun (B-702), Priya (A-1101) and 4 others'));
+      expect(_b('b_seer').peopleLine(), startsWith('Ravi (C-801), Sunita (A-201) and 4 others'));
       expect(searchBuckets(_buckets(), 'seafood').map((b) => b.id), containsAll(['b_seer', 'b_paarai']));
       expect(searchBuckets(_buckets().where((b) => b.isLive), 'rice').map((b) => b.id), ['b_basmati']);
       expect(searchBuckets(_buckets().where((b) => b.isLive), 'kasi').map((b) => b.id), containsAll(['b_seer', 'b_paarai']));
