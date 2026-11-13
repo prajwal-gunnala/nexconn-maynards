@@ -73,6 +73,7 @@ class OrderView {
   const OrderView({
     required this.id,
     required this.bucketId,
+    this.groupId,
     required this.title,
     required this.status,
     this.image,
@@ -88,6 +89,9 @@ class OrderView {
 
   final String id;
   final String bucketId;
+
+  /// The bucket's Nexconn group (seed-tagged by the server); null on old data.
+  final String? groupId;
   final String title;
   final OrderStatus status;
   final String? image;
@@ -110,6 +114,7 @@ class OrderView {
     return OrderView(
       id: asString(j['id']),
       bucketId: asString(j['bucketId']),
+      groupId: j['groupId']?.toString(),
       title: asString(j['title']),
       status: OrderStatus.parse(j['status']),
       image: asStringOrNull(j['image']),

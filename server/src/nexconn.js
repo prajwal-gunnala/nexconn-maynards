@@ -21,7 +21,8 @@ export class NexconnError extends Error {
 }
 
 export const streetGroupId = (communityId) => `street_${communityId}`;
-export const bucketGroupId = (bucketId) => `bucket_${bucketId}`;
+/** Bucket group id. A seed tag makes every re-seed use brand-new groups (Nexconn keeps group history per id). */
+export const bucketGroupId = (bucketId, tag = '') => (tag ? `bucket_${bucketId}__${tag}` : `bucket_${bucketId}`);
 
 const str = (v) => (v === null || v === undefined ? '' : typeof v === 'string' ? v : typeof v === 'object' ? JSON.stringify(v) : String(v));
 const strings = (obj) => Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, str(v)]));
@@ -177,7 +178,7 @@ export function createNexconn({
       pushContent: fields.push || undefined,
     })),
     createBucketGroup: safe('createBucketGroup', (bucket, memberIds) =>
-      ensureGroup(bucketGroupId(bucket.id), bucket.title, memberIds)),
+      ensureGroup(bucket.groupId ?? bucketGroupId(bucket.id), bucket.title, memberIds)),
     postOrder: safe('postOrder', (groupId, order) => sendGroup({
       channelId: groupId, type: 'js:order', pushContent: `Order ${order.id} is confirmed`,
       content: strings({ orderId: order.id, bucketId: order.bucketId, title: order.title, total: order.total, members: order.lines.length }),

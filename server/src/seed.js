@@ -274,6 +274,7 @@ export function buildSeed(now = new Date(), { rng = Math.random } = {}) {
   }, 'u_ravi', ago(6), soon, [['u_ravi', { unitIds: ['head_half'], payMode: 'at_market', ...cutOpt('Curry cut') }]]);
 
   store.data.seededAt = now.toISOString();
+  store.data.seedTag = Math.floor(now.getTime() / 1000).toString(36);
   return store.data;
 }
 
@@ -306,6 +307,11 @@ export async function seedNexconn(data, nx, { logger = console, oldData = null }
   ]);
   for (const channelId of oldGroups) {
     await nx.call('/v4/group-channel/dismiss', { channelId }).catch(() => {});
+  }
+
+  // Clear each person's private chat with the bot (old pickup codes), server-side history.
+  for (const u of Object.values(oldData?.users ?? {})) {
+    await nx.call('/v4/channel/message/history/delete', { fromUserId: u.id, channelId: BOT_ID, channelType: 1 }).catch(() => {});
   }
 
   const users = [{ id: BOT_ID, name: BOT_NAME }, ...Object.values(data.users)];

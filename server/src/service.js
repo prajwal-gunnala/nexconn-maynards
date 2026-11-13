@@ -94,15 +94,21 @@ export class JugaadService {
       capacity: b.capacity ?? null,
       progress: P.progress(b, shares),
       cardMessageId: b.cardMessageId ?? null,
+      groupId: this.groupOf(b),
       myShare: myShare ? this.shareView(myShare, true) : null,
       shares: active.map((s) => this.shareView(s, false)),
     };
   }
 
+  /** The bucket's Nexconn group: tagged with the seed so a re-seed never reuses an old group's history. */
+  groupOf(b) { return b.groupId ?? bucketGroupId(b.id, this.store.data.seedTag ?? ''); }
+
   orderView(o, viewer) {
     const isMember = (l) => viewer && l.userId === viewer.id;
+    const b = this.store.bucket(o.bucketId);
     return {
       ...o,
+      groupId: b ? this.groupOf(b) : bucketGroupId(o.bucketId),
       lines: o.lines.map((l) => ({ ...l, otp: isMember(l) ? l.otp : null })),
       myLine: o.lines.find(isMember) ?? null,
     };
@@ -403,7 +409,7 @@ export class JugaadService {
     share.status = 'checked_in';
     share.checkedInAt = this.now().toISOString();
     const where = b.meet?.place ?? b.pickupPoint;
-    this.event(b, 'checkin', `${share.user.name} (${share.user.unit}) is here at ${where}`, user.id, bucketGroupId(b.id));
+    this.event(b, 'checkin', `${share.user.name} (${share.user.unit}) is here at ${where}`, user.id, this.groupOf(b));
     this.save();
     return { share: this.shareView(share), bucket: this.bucketView(b, user.id) };
   }
@@ -447,10 +453,11 @@ export class JugaadService {
     this.event(b, 'locked', `${b.title} is confirmed! Order ${order.id} for ${order.lines.length} neighbours. ${how} Together you saved ${rupees(savedTotal)}.`);
     this.syncCard(b);
     this.bg(`order group ${b.id}`, async () => {
+      b.groupId = this.groupOf(b);
       const ok = await this.nx.createBucketGroup(b, memberIds);
       if (!ok) return;
-      await this.nx.postOrder(bucketGroupId(b.id), order);
-      await this.nx.postEvent(bucketGroupId(b.id), {
+      await this.nx.postOrder(this.groupOf(b), order);
+      await this.nx.postEvent(this.groupOf(b), {
         bucketId: b.id, kind: 'locked', actor: 'jugaad_bot',
         text: `Welcome to the ${b.title} group. Pickup: ${order.pickupPoint}, ${order.window}. Show your OTP to ${b.vendor?.name ?? 'the organiser'} at handover.`,
       });

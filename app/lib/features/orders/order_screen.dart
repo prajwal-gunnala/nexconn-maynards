@@ -77,7 +77,7 @@ class _OrderScreenState extends State<OrderScreen> {
               child: AppButton(
                 label: 'Chat with buyers and vendor',
                 icon: Icons.forum_outlined,
-                onPressed: () => context.push('/chat/group/bucket_${o.bucketId}?title=${Uri.encodeComponent(o.title)}'),
+                onPressed: () => context.push('/chat/group/${o.groupId ?? 'bucket_${o.bucketId}'}?title=${Uri.encodeComponent(o.title)}'),
               ),
             ),
     );

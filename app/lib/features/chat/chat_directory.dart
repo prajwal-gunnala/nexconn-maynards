@@ -178,9 +178,12 @@ class ChatDirectory extends ChangeNotifier {
   }
 
   /// `street_c_seabreeze` → `c_seabreeze`; `bucket_b_seer` → `b_seer`.
+  /// Bucket groups may carry a seed tag (`bucket_b_seer__k3x9`); the tag is dropped.
   static String refOf(String channelId) {
     final i = channelId.indexOf('_');
-    return i < 0 ? channelId : channelId.substring(i + 1);
+    final ref = i < 0 ? channelId : channelId.substring(i + 1);
+    final t = ref.indexOf('__');
+    return t < 0 ? ref : ref.substring(0, t);
   }
 
   /// "Sea Breeze Towers" → "Sea Breeze Street".
