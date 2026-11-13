@@ -62,7 +62,6 @@ class _PostSuccessState extends State<PostSuccess> with SingleTickerProviderStat
     final pop = _phase(0, 0.18, Curves.easeOutBack);
     final tick = _phase(0.12, 0.35);
     final rise = _phase(0.25, 0.45);
-    final bar = _phase(0.3, 1, Curves.linear);
     final unit = b.unitLabel ?? 'share';
     final goal = switch (b.type) {
       BucketType.split => '${b.units.length} ${unit}s open',
@@ -161,29 +160,7 @@ class _PostSuccessState extends State<PostSuccess> with SingleTickerProviderStat
                       opacity: rise,
                       child: Column(
                         children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: AnimatedBuilder(
-                                  animation: bar,
-                                  builder: (_, _) => ClipRRect(
-                                    borderRadius: BorderRadius.circular(4),
-                                    child: Container(
-                                      height: 4,
-                                      color: AppColors.line,
-                                      alignment: Alignment.centerLeft,
-                                      child: FractionallySizedBox(
-                                        widthFactor: bar.value,
-                                        child: Container(color: AppColors.brand),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: AppSpace.sm),
-                          Text('Opening your bucket', style: AppText.caption),
+                          Text('Opening your bucket in a moment', style: AppText.caption),
                           const SizedBox(height: AppSpace.lg),
                           AppButton(label: 'View bucket', onPressed: _finish),
                           const SizedBox(height: AppSpace.sm),

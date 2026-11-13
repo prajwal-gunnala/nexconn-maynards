@@ -57,7 +57,9 @@ class MemberLine {
   /// Payment state pill: held / paid / due.
   StatusPill pill() => switch (paymentStatus) {
         'held' => const StatusPill('Held', tone: PillTone.held, icon: Icons.lock_clock_outlined),
-        'captured' => const StatusPill('Paid', tone: PillTone.captured, icon: Icons.check_circle_outline),
+        // Charged at the final price when the bucket fills; the vendor is paid at the OTP handover.
+        'captured' when collected => const StatusPill('Paid', tone: PillTone.captured, icon: Icons.check_circle_outline),
+        'captured' => const StatusPill('Charged', tone: PillTone.captured, icon: Icons.check_circle_outline),
         'paid' => const StatusPill('Paid', tone: PillTone.captured, icon: Icons.check_circle_outline),
         'due' => const StatusPill('Due at market', tone: PillTone.brand),
         'at_pickup' => const StatusPill('At pickup', tone: PillTone.brand),

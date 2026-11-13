@@ -28,7 +28,7 @@ enum _Filter {
   held('Held', 'held'),
   paid('Paid', 'paid'),
   released('Released', 'released'),
-  market('At market', 'at_market');
+  market('Market', 'at_market');
 
   const _Filter(this.label, this.kind);
   final String label;
@@ -41,6 +41,9 @@ class _WalletScreenState extends State<WalletScreen> {
 
   /// My line per order id, to explain price drops ("Price dropped to ₹88/kg").
   Map<String, MemberLine> _myLines = const {};
+
+  /// Live buckets behind held entries, to show when the price has since dropped.
+  Map<String, Bucket> _heldBuckets = const {};
   _Filter _filter = _Filter.all;
 
   DateTime get _now => widget.clock?.call() ?? DateTime.now();
@@ -58,10 +61,12 @@ class _WalletScreenState extends State<WalletScreen> {
       final orders = _myOrderLines(api, me);
       final w = await api.wallet();
       final lines = await orders;
+      final held = await _bucketsFor(api, w.entries.where((e) => e.kind == 'held').map((e) => e.bucketId).nonNulls.toSet());
       if (!mounted) return;
       setState(() {
         _wallet = w;
         _myLines = lines;
+        _heldBuckets = held;
         _error = null;
       });
     } on ApiException catch (e) {
@@ -82,6 +87,18 @@ class _WalletScreenState extends State<WalletScreen> {
     } on ApiException {
       return const {};
     }
+  }
+
+  static Future<Map<String, Bucket>> _bucketsFor(ApiClient api, Set<String> ids) async {
+    final out = <String, Bucket>{};
+    await Future.wait(ids.map((id) async {
+      try {
+        out[id] = await api.bucket(id);
+      } on ApiException {
+        // optional detail
+      }
+    }));
+    return out;
   }
 
   @override
@@ -241,7 +258,11 @@ class _WalletScreenState extends State<WalletScreen> {
                   child: Column(children: [
                     for (var i = 0; i < shown.length; i++) ...[
                       if (i > 0) const Divider(),
-                      _EntryRow(entry: shown[i], myLine: _myLines[asStringOrNull(shown[i].raw['orderId'])]),
+                      _EntryRow(
+                        entry: shown[i],
+                        myLine: _myLines[asStringOrNull(shown[i].raw['orderId'])],
+                        bucket: shown[i].kind == 'held' ? _heldBuckets[shown[i].bucketId] : null,
+                      ),
                     ],
                   ]),
                 ),
@@ -404,8 +425,21 @@ class _OrdersLink extends StatelessWidget {
 }
 
 class _EntryRow extends StatelessWidget {
-  const _EntryRow({required this.entry, this.myLine});
+  const _EntryRow({required this.entry, this.myLine, this.bucket});
   final WalletEntry entry;
+
+  /// The live bucket for a held entry, when known.
+  final Bucket? bucket;
+
+  /// "now ₹400/flat" when the bucket's current price is below what was held.
+  String? get _priceNow {
+    final b = bucket;
+    final p = b?.unitPrice;
+    if (b == null || p == null || entry.kind != 'held') return null;
+    final qty = b.myShare?.qty ?? 1;
+    if (qty <= 0 || p * qty >= entry.amount) return null;
+    return '${Fmt.rupees(p)}/${b.unitLabel ?? 'unit'}';
+  }
 
   /// My line in the entry's order, when known: gives the final unit price.
   final MemberLine? myLine;
@@ -462,7 +496,15 @@ class _EntryRow extends StatelessWidget {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(e.title, style: AppText.label.copyWith(fontWeight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 2),
-                Text(sub, style: AppText.caption, maxLines: 1, overflow: TextOverflow.ellipsis),
+                Text(sub, style: AppText.caption, maxLines: 2, overflow: TextOverflow.ellipsis),
+                if (_priceNow != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    '${Fmt.rupees(e.amount)} held · now $_priceNow. You pay the lower price',
+                    style: AppText.caption.copyWith(color: AppColors.save, fontWeight: FontWeight.w600, fontFeatures: tabular),
+                    maxLines: 2,
+                  ),
+                ],
                 if (back > 0 || savings > 0) ...[
                   const SizedBox(height: 2),
                   Text(

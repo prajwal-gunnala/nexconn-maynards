@@ -491,11 +491,9 @@ class _CreateBucketScreenState extends State<CreateBucketScreen> {
         ),
         bottomNavigationBar: StickyCta(
           child: _step == 0
-              ? AppButton(
-                  label: _kind == null ? 'Pick a type to continue' : 'Continue with ${_kind!.label}',
-                  icon: _kind == null ? null : Icons.arrow_forward_rounded,
-                  onPressed: _kind == null ? null : _continue,
-                )
+              ? (_kind == null
+                  ? const _DisabledCta('Pick a type to continue')
+                  : AppButton(label: 'Continue with ${_kind!.label}', icon: Icons.arrow_forward_rounded, onPressed: _continue))
               : AppButton(
                   key: const Key('create-post'),
                   label: 'Post to $_streetName',
@@ -1019,7 +1017,7 @@ class _CreateBucketScreenState extends State<CreateBucketScreen> {
             padding: const EdgeInsets.only(bottom: AppSpace.sm),
             child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Expanded(
-                flex: 5,
+                flex: 9,
                 child: TextField(
                   controller: _items[i].name,
                   textCapitalization: TextCapitalization.words,
@@ -1033,7 +1031,7 @@ class _CreateBucketScreenState extends State<CreateBucketScreen> {
               ),
               const SizedBox(width: AppSpace.sm),
               Expanded(
-                flex: 4,
+                flex: 8,
                 child: TextField(
                   controller: _items[i].price,
                   keyboardType: TextInputType.number,
@@ -1130,7 +1128,7 @@ class _CreateBucketScreenState extends State<CreateBucketScreen> {
       child: Padding(
         padding: const EdgeInsets.only(right: 8),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Text('/${row.unit}', style: AppText.bodyMuted),
+          Text('/${row.unit == 'dozen' ? 'dz' : row.unit}', style: AppText.bodyMuted),
           const Icon(Icons.arrow_drop_down_rounded, size: 18, color: AppColors.inkMuted),
         ]),
       ),
@@ -1224,8 +1222,10 @@ class _CreateBucketScreenState extends State<CreateBucketScreen> {
       if (_atMarket && _meetAt != null) ('Night before', _meetAt!.subtract(const Duration(hours: 8))),
     ];
     return FormSection(
-      title: 'Cutoff and pickup',
-      helper: 'If it fills by the cutoff, it becomes an order. If not, every hold is released.',
+      title: _atMarket ? 'Cutoff' : 'Cutoff and pickup',
+      helper: _atMarket
+          ? "If enough neighbours book by the cutoff, the meet-up is on. If not, it's called off and nobody pays."
+          : 'If it fills by the cutoff, it becomes an order. If not, every hold is released.',
       children: [
         PickerTile(
           label: 'Closes',
@@ -1348,4 +1348,28 @@ class _PayOption extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Neutral disabled CTA (same look as the bucket screen's "Pick a cut first"): readable, clearly inactive.
+class _DisabledCta extends StatelessWidget {
+  const _DisabledCta(this.label);
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+        button: true,
+        enabled: false,
+        label: label,
+        excludeSemantics: true,
+        child: Container(
+          height: 52,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(color: const Color(0xFFEDEAE7), borderRadius: BorderRadius.circular(14)),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            const Icon(Icons.touch_app_outlined, size: 18, color: AppColors.inkMuted),
+            const SizedBox(width: AppSpace.sm),
+            Text(label, style: AppText.heading.copyWith(fontSize: 15, color: const Color(0xFF5E5751))),
+          ]),
+        ),
+      );
 }

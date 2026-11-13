@@ -114,7 +114,9 @@ class _OrderScreenState extends State<OrderScreen> {
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const StatusPill('Bucket full · order created', tone: PillTone.captured, icon: Icons.check_circle_outline),
+            o.atMarket
+                ? const StatusPill('Booked · pay at the stall', tone: PillTone.brand, icon: Icons.storefront_outlined)
+                : const StatusPill('Bucket full · order created', tone: PillTone.captured, icon: Icons.check_circle_outline),
             const SizedBox(height: AppSpace.md),
             Text(o.title, style: AppText.title.copyWith(fontSize: 22)),
             const SizedBox(height: AppSpace.xs),
@@ -217,7 +219,7 @@ class _OtpCard extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: AppSpace.md, vertical: AppSpace.sm),
             decoration: BoxDecoration(color: AppColors.canvas, borderRadius: BorderRadius.circular(10)),
             child: Text(
-              'The vendor enters it to hand over your ${line.qtyLabel}. Never share it in the chat.',
+              'Show it to ${vendor ?? 'the vendor'} at handover. Never post it in the Street group.',
               style: AppText.caption,
               textAlign: TextAlign.center,
             ),
@@ -258,7 +260,11 @@ class _MeetCard extends StatelessWidget {
             Text('Meet at the market', style: AppText.caption.copyWith(color: AppColors.brandDeep, fontWeight: FontWeight.w700)),
             const SizedBox(height: 2),
             Text(
-              [if (vendor?.place != null && !place.contains(vendor!.place!)) vendor.place!, place].join(', '),
+              // Same place name as the bucket screen ("Kasimedu Fish Market, Gate 3").
+              [
+                if (vendor?.place != null && !place.contains(vendor!.place!)) vendor.place!.replaceAll(' Harbour', ' Fish Market'),
+                place,
+              ].join(', '),
               style: AppText.heading.copyWith(fontSize: 17),
             ),
             if (when.isNotEmpty) ...[
@@ -413,6 +419,7 @@ class _MyMoney extends StatelessWidget {
     final market = line.payMode == PayMode.atMarket;
     final held = line.heldAmount ?? bucket?.myShare?.hold?.amount ?? line.amount;
     final released = held - line.amount;
+    final vendor = bucket?.vendor?.name ?? 'The vendor';
     Widget row(String label, int? amount, {TextStyle? style, Widget? trailing, String? text}) => Padding(
           padding: const EdgeInsets.symmetric(vertical: 6),
           child: Row(children: [
@@ -439,8 +446,23 @@ class _MyMoney extends StatelessWidget {
               style: AppText.body.copyWith(fontWeight: FontWeight.w800), trailing: line.pill()),
         ] else ...[
           row('Held with UPI', held),
-          row('Paid to vendor', line.amount, style: AppText.body.copyWith(fontWeight: FontWeight.w800), trailing: line.pill()),
+          row(line.collected ? 'Paid to $vendor' : 'Charged at final price', line.amount,
+              style: AppText.body.copyWith(fontWeight: FontWeight.w800), trailing: line.pill()),
           if (released > 0) row('Back to your bank', released, style: AppText.body.copyWith(color: AppColors.released)),
+          if (!line.collected) ...[
+            const SizedBox(height: AppSpace.xs),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpace.md, vertical: AppSpace.sm),
+              decoration: BoxDecoration(color: AppColors.canvas, borderRadius: BorderRadius.circular(10)),
+              child: Row(children: [
+                const Icon(Icons.storefront_outlined, size: 16, color: AppColors.inkMuted),
+                const SizedBox(width: AppSpace.sm),
+                Expanded(
+                  child: Text('$vendor gets ${Fmt.rupees(line.amount)} when you show your pickup code.', style: AppText.caption),
+                ),
+              ]),
+            ),
+          ],
         ],
         if (line.savings > 0) ...[
           const Padding(padding: EdgeInsets.symmetric(vertical: AppSpace.sm), child: Divider()),
