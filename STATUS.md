@@ -1,4 +1,4 @@
-# Jugaad Street — status (updated 2026-11-13, 11:30 IST)
+# Jugaad Street — status (paused 2026-11-13, 12:40 IST)
 
 Deadline: **Nov 22, 23:59 AoE**. Branch `dev`, all local (nothing pushed or published — the user decides when).
 
@@ -21,8 +21,14 @@ Deadline: **Nov 22, 23:59 AoE**. Branch `dev`, all local (nothing pushed or publ
 - Gemini + ChatGPT reviews applied across every screen; one consistent data story; shared `AppClock`.
 - Logo, launcher icon, native + animated basket splash; group-buying home; QA fixes verified on device.
 - Server: each seed gets fresh Street + bucket chats (seed-tagged bucket groups, bot DM history cleared).
-- Film: timeline generated (`videoedit/projects/jugaad-film/src/timeline.ts`, 55.6 s); app footage capture running
-  (`/mnt/storage/videoedit-media/jugaad-film/app/`); film art in Flow running.
+- Film: timeline generated (`videoedit/projects/jugaad-film/src/timeline.ts`, 55.6 s).
+- Film art DONE: 14 flat-2.5D stills + green-key layers in `/mnt/storage/videoedit-media/jugaad-film/art/` (ART.md),
+  2 Veo clips in `veo/` (40 credits; Flow balance 144), 5 Pixabay tracks in `music/` (MUSIC.md).
+  Music A/B with the narration in `music/ab/AB_1..3*.mp3` — **user to pick** (default: AB_1 Fusion, start at 0:15).
+- PAUSED mid-way (stopped on the user's request, nothing half-written in the app repo):
+  - App footage capture: had only started (release build + network config committed). Re-run the capture brief.
+  - Film base build in Remotion: had only started (only `src/timeline.ts` exists). Re-run the film-base brief
+    (base kit, s1 problem, s2 meet, s10 end card, stubs for s3–s9), then app-driven scenes after the capture.
 
 ## Next (in order)
 1. **Disk**: all non-browser caches cleared with the user's OK (2026-11-13 ~10:40): Gradle caches, model caches, npm, tracker, pip. Main disk ~19 GB free. Kept: browser caches, Gradle 9.3.1 dist, ~/.pub-cache. First Gradle build re-downloads deps.
