@@ -309,7 +309,7 @@ class BucketChatCard extends StatelessWidget {
                 ],
                 if (p?.unitPrice != null) ...[
                   const SizedBox(height: AppSpace.sm),
-                  _PriceLine(price: p!.unitPrice!, unit: unit, oldPrice: oldPrice),
+                  _PriceLine(price: p!.unitPrice!, unit: c.type == BucketType.split ? 'kg' : unit, oldPrice: oldPrice),
                 ],
                 if (c.type == BucketType.split && c.units.isNotEmpty) ...[
                   const SizedBox(height: AppSpace.sm),
