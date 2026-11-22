@@ -20,6 +20,12 @@ class AppConfig {
     defaultValue: 'http://localhost:8787',
   );
 
+  /// Where release builds look up the demo API address (GitHub Pages). Empty disables the lookup.
+  static const remoteConfigUrl = String.fromEnvironment(
+    'REMOTE_CONFIG',
+    defaultValue: 'https://prajwal-gunnala.github.io/nexconn-maynards/config.json',
+  );
+
   /// Dev only: a Nexconn user token. When set and nobody is logged in, the app
   /// skips login, connects with this token and opens [devChannelId].
   static const devNexconnToken = String.fromEnvironment('DEV_NEXCONN_TOKEN');
