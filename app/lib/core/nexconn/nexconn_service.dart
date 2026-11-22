@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:ai_nexconn_chat_plugin/ai_nexconn_chat_plugin.dart' as nc show AreaCode;
+import 'package:ai_nexconn_chat_plugin/ai_nexconn_chat_plugin.dart' as nc show AreaCode, GroupChannel, SendMessageParams, TextMessageParams;
 import 'package:ai_nexconn_chatui_plugin/ai_nexconn_chatui_plugin.dart';
 import 'package:flutter/foundation.dart';
 
@@ -93,6 +93,15 @@ class NexconnService {
     final merged = {...?_metaCache[messageId], ...changed};
     _metaCache[messageId] = merged;
     _metaCtrl.add(MetadataUpdate(messageId, merged));
+  }
+
+  /// Standalone mode: posts a plain text into a group (e.g. the Street) so chat reflects an in-app action that a
+  /// server would otherwise announce. Best effort; never throws.
+  Future<void> postText(String groupId, String text) async {
+    if (!isConnected) return;
+    try {
+      await nc.GroupChannel(groupId).sendMessage(nc.SendMessageParams(messageParams: nc.TextMessageParams(text: text)));
+    } catch (_) {}
   }
 
   bool _inited = false;

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/api/api_client.dart';
+import '../../core/config.dart';
 import '../../core/format.dart';
 import '../../core/models/models.dart';
 import '../../core/nexconn/nexconn_service.dart';
@@ -60,6 +61,19 @@ class _HoldScreenState extends State<HoldScreen> {
       context.read<NexconnService>().applyLocalMetadata(id, {'p': jsonEncode(b.progress.raw)});
     } on ProviderNotFoundException {
       // No chat service (tests): nothing to update.
+    }
+  }
+
+  /// Standalone (no server): say it in the Street chat ourselves, since no server bot will.
+  void _announce(Share? s, Bucket? b, {required bool held}) {
+    if (!AppConfig.standalone || s == null || b == null) return;
+    final street = context.read<SessionStore>().streetChannelId;
+    if (street == null) return;
+    final how = held ? '${Fmt.rupees(s.estAmount)} held with UPI' : 'paying at the market';
+    try {
+      context.read<NexconnService>().postText(street, 'Joined ${b.title} · $how. ${b.progress.filled}/${b.progress.target} filled.');
+    } on ProviderNotFoundException {
+      // No chat service (tests).
     }
   }
 
@@ -120,6 +134,7 @@ class _HoldScreenState extends State<HoldScreen> {
         return;
       }
       _syncCard(r.bucket);
+      if (r.share!.status == ShareStatus.booked) _announce(r.share, r.bucket, held: false);
       _onShare(r.share!, r.bucket);
     } on ApiException catch (e) {
       _fail(e.message);
@@ -170,6 +185,7 @@ class _HoldScreenState extends State<HoldScreen> {
       final r = await _api.authorizeHold(hold.id, vpa: _vpa, pin: _pin);
       if (!mounted) return;
       _syncCard(r.bucket);
+      _announce(r.share, r.bucket, held: true);
       setState(() {
         _share = r.share ?? _share;
         if (r.bucket != null) _after = BucketView(r.bucket!, _req!.view.x);

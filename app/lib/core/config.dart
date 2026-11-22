@@ -14,17 +14,14 @@ class AppConfig {
     defaultValue: 'tdrvipkstz0f5',
   );
 
-  /// Local API. Reach it from the emulator with `adb reverse tcp:8787 tcp:8787`.
+  /// Real API, used only when built with `--dart-define=API_BASE=…` (otherwise the app runs standalone).
   static const apiBase = String.fromEnvironment(
     'API_BASE',
     defaultValue: 'http://localhost:8787',
   );
 
-  /// Where release builds look up the demo API address (GitHub Pages). Empty disables the lookup.
-  static const remoteConfigUrl = String.fromEnvironment(
-    'REMOTE_CONFIG',
-    defaultValue: 'https://prajwal-gunnala.github.io/nexconn-maynards/config.json',
-  );
+  /// No server: the app answers its own API from the bundled demo snapshot (see LocalBackend).
+  static const standalone = !bool.hasEnvironment('API_BASE');
 
   /// Dev only: a Nexconn user token. When set and nobody is logged in, the app
   /// skips login, connects with this token and opens [devChannelId].
