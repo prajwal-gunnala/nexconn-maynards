@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -5,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../core/api/api_client.dart';
 import '../../core/format.dart';
 import '../../core/models/models.dart';
+import '../../core/nexconn/nexconn_service.dart';
 import '../../core/session/session_store.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/tokens.dart';
@@ -48,6 +51,17 @@ class _HoldScreenState extends State<HoldScreen> {
   late String _vpa;
 
   ApiClient get _api => context.read<ApiClient>();
+
+  /// Our own claim already changed the card on the server; show it on this phone straight away too.
+  void _syncCard(Bucket? b) {
+    final id = b?.cardMessageId;
+    if (b == null || id == null || b.progress.raw.isEmpty) return;
+    try {
+      context.read<NexconnService>().applyLocalMetadata(id, {'p': jsonEncode(b.progress.raw)});
+    } on ProviderNotFoundException {
+      // No chat service (tests): nothing to update.
+    }
+  }
 
   @override
   void initState() {
@@ -105,6 +119,7 @@ class _HoldScreenState extends State<HoldScreen> {
         _fail('The server did not return your share. Try again.');
         return;
       }
+      _syncCard(r.bucket);
       _onShare(r.share!, r.bucket);
     } on ApiException catch (e) {
       _fail(e.message);
@@ -154,6 +169,7 @@ class _HoldScreenState extends State<HoldScreen> {
     try {
       final r = await _api.authorizeHold(hold.id, vpa: _vpa, pin: _pin);
       if (!mounted) return;
+      _syncCard(r.bucket);
       setState(() {
         _share = r.share ?? _share;
         if (r.bucket != null) _after = BucketView(r.bucket!, _req!.view.x);

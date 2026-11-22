@@ -112,7 +112,11 @@ class Progress {
     this.unitPrice,
     this.nextTier,
     this.percent,
+    this.raw = const {},
   });
+
+  /// The JSON this was parsed from (the card's `p` metadata is the same shape, incl. `goAt`).
+  final Json raw;
 
   final num filled;
   final num target;
@@ -139,6 +143,7 @@ class Progress {
         unitPrice: asIntOrNull(j['unitPrice']),
         nextTier: asJson(j['nextTier']) == null ? null : NextTier.fromJson(asJson(j['nextTier'])!),
         percent: asIntOrNull(j['percent']),
+        raw: j,
       );
 }
 

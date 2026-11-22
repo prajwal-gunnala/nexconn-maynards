@@ -86,6 +86,15 @@ class NexconnService {
     return {...base, ...cached};
   }
 
+  /// Applies a card change we learned from our own API call (e.g. the response to this user's claim), so the
+  /// claimer's card moves even if the push for it is slow. A later push simply overwrites it.
+  void applyLocalMetadata(String? messageId, Map<String, String> changed) {
+    if (messageId == null || messageId.isEmpty || changed.isEmpty) return;
+    final merged = {...?_metaCache[messageId], ...changed};
+    _metaCache[messageId] = merged;
+    _metaCtrl.add(MetadataUpdate(messageId, merged));
+  }
+
   bool _inited = false;
   Future<void>? _initFuture;
 
