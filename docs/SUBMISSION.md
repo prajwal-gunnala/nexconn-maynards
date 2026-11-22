@@ -39,7 +39,7 @@ sell to them.
 - **Live app or download:** https://prajwal-gunnala.github.io/nexconn-maynards/ (click-through demo + APK download)
   — or direct APK: https://github.com/prajwal-gunnala/nexconn-maynards/releases/latest/download/JugaadStreet.apk
 - **GitHub:** https://github.com/prajwal-gunnala/nexconn-maynards
-- **Demo video:** _YouTube link_
+- **Demo video:** https://youtu.be/b_FC3qWJCMM  (set it to Unlisted before submitting)
 
 ## 04 Write-up
 Upload `docs/Jugaad_Street_Writeup.pdf`.

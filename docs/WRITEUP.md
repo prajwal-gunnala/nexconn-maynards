@@ -60,9 +60,10 @@ Jugaad Street is a bulk-buying marketplace that lives inside the community's cha
 | **Message metadata** (`hasMetadata`, `channel-type/message/metadata/set`, `onMessageMetadataUpdated`) | The live bucket card: progress, price tier, owners of each cut update on every phone |
 | **Server-sent bot messages** | `jugaad_bot` posts new buckets, claims, nudges, lock and expiry events |
 | **Access tokens** (`auth/access-token/issue`) | Issued by our server per user; the App Secret never ships in the app |
+| **Call SDK for Android** (`ai.nexconn.chat:call` 26.2.0, via a Flutter platform channel) | Call buttons in direct chats (1-to-1) and bucket / Street groups (group calls), voice and video; runs on the same Nexconn connection as chat (calls need the audio/video service enabled for the App Key in the Nexconn console) |
 
 **Features built on Nexconn:** the live bucket card, claim and release events, the bucket order chat, private
-pickup codes, admin nudges with mentions, vendor chats.
+pickup codes, admin nudges with mentions, vendor chats, and calls (1-to-1 and group) from any chat header.
 
 ## How it's built
 
@@ -114,10 +115,12 @@ Nexconn integration, images and film. Nothing existed before.
 
 ## Traction
 
-_To be filled with real numbers: testers, buckets run, active users on the Nexconn app key._
+No public traction numbers yet: the app was built and tested during the challenge week.
 
 ## Links
 
-- Demo video: _link_
-- App download (APK): _link_
-- Source: _GitHub link_
+- Demo video: https://youtu.be/b_FC3qWJCMM
+- Try it in the browser + download: https://prajwal-gunnala.github.io/nexconn-maynards/
+- App download (APK): https://github.com/prajwal-gunnala/nexconn-maynards/releases/tag/v1.0
+- Source: https://github.com/prajwal-gunnala/nexconn-maynards
+- Demo logins (OTP 1234): Ananya 9000000001 (member), Priya 9000000005 (admin), Sri Balaji 9000000012 (vendor)
