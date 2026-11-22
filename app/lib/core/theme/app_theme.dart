@@ -1,5 +1,6 @@
 import 'package:ai_nexconn_chatui_plugin/ai_nexconn_chatui_plugin.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'tokens.dart';
 
@@ -64,6 +65,11 @@ class AppTheme {
         elevation: 0,
         scrolledUnderElevation: 0.5,
         centerTitle: false,
+        systemOverlayStyle: const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.dark,
+          statusBarBrightness: Brightness.light,
+        ),
         titleTextStyle: AppText.heading.copyWith(fontSize: 18),
       ),
       cardTheme: CardThemeData(

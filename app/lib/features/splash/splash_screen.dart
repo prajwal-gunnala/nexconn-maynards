@@ -54,9 +54,13 @@ class _SplashOverlayState extends State<SplashOverlay> {
   }
 
   void _finish() {
-    // Hand the status bar back to Flutter's default (translucent scrim, light icons); AppBars restyle it.
+    // Most screens are white: transparent status bar with dark icons; AppBars restyle it where needed.
     SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(statusBarColor: Color(0x40000000), statusBarIconBrightness: Brightness.light),
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+      ),
     );
     setState(() => _done = true);
   }

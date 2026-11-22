@@ -29,7 +29,7 @@ class _Slide {
 
 const _slides = [
   _Slide('Wholesale prices for your whole street',
-      'Start a bucket for a whole fish, a sack of rice or a pest-control visit. Neighbours claim their share in your society chat.'),
+      'Start a bucket for a whole fish, a sack of rice or a pest-control visit. Neighbours, or anyone heading to the same market, claim their share in one live chat.'),
   _Slide('Your money is only held, not paid, until the bucket fills',
       'Your money is only held until the bucket fills. Everyone pays the final group price, and anything extra goes straight back.'),
   _Slide('One order, one delivery to your gate',
