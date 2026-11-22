@@ -134,9 +134,10 @@ class NexconnService {
           final id = m?.messageId;
           debugPrint('[nexconn] metadata updated id=$id changed=${e.metadata} full=${m?.metadata}');
           if (id == null) return;
+          // The cache is the source of truth: the event's message is a snapshot that can lag behind what we already
+          // applied, so it only seeds an empty cache; the changed keys always win.
           final merged = <String, String>{
-            ..._metaCache[id] ?? const {},
-            if (m != null) ...jsMetadata(m),
+            ..._metaCache[id] ?? (m != null ? jsMetadata(m) : const <String, String>{}),
             ...?e.metadata?.map((k, v) => MapEntry(k.toString(), v?.toString() ?? '')),
           };
           _metaCache[id] = merged;
