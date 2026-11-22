@@ -8,9 +8,10 @@ Team Maynards · Nexconn Build Challenge 2026 · Track: Marketplace & Support (O
 
 ## Why we built it
 
-Every Sunday at the Kasimedu fish market in Chennai we hit the same problem. A whole seer fish costs about
-₹950/kg at the harbour, while seer steaks cost ₹1,400–3,700/kg online. But a 5 kg fish is too much for one
-family, so we buy small and pay more.
+Every Sunday morning we're at the Kasimedu fish market. The best catch is the big fish: a whole vanjaram (seer),
+about ₹950/kg at the harbour. But big fish are sold only whole, and five kilos is too much for one family, so we
+walk away with a smaller fish. Right there, another family wanted just the head for curry, and someone from across the
+city wanted the middle for fry. Together we could have bought that whole fish. We just didn't know each other.
 
 The same thing happens everywhere in an Indian housing society: a 25 kg rice sack, a peti of Alphonso mangoes, a
 Bakrid goat share, pest control for the whole tower. Wholesale is 20–40% cheaper, but only in quantities one
@@ -75,6 +76,27 @@ pickup codes, admin nudges with mentions, vendor chats.
   turns full buckets into orders with OTPs, Nexconn bot and live-card updates. 19 automated tests.
 - **Payments:** a sandbox of the UPI Reserve flow. Production route: Razorpay or Cashfree UPI Reserve Pay
   (merchant category grocery/food is allowed) plus Razorpay Route with settlement `on_hold` until OTP handover.
+
+## How we scale
+
+1. **Every bucket recruits its own users.** A bucket only completes when enough people join, so whoever starts one
+   shares it — in the society, at the stall, with family across the city. Growth is built into the product.
+2. **Vendors bring their crowd.** A fish seller with a big catch starts a bucket before the boat unloads and sells
+   the whole fish early. One market association brings many stalls.
+3. **Local captains.** One trusted person per society, office, college or hostel runs buckets and earns a small
+   share — the community-leader model India's group-buying apps already use to enter new areas.
+4. **Market by market, city by city.** Start with one market on one day (Kasimedu, Sundays), then copy the playbook to
+   each city's fish harbours, vegetable markets and grain markets: about ten captains per market.
+5. **More categories on the same rails.** Fish → meat shares → rice and staples → seasonal fruit → festival buying →
+   home services (pest control, AC servicing) → big-ticket items (solar panels or water purifiers for a whole
+   building). Same bucket, same chat, same UPI hold, all year round.
+6. **Further out.** "Boat to bucket": fishermen sell the morning catch in shares before landing. "Farm to street": a
+   farmer's mango truck fills buckets before it leaves the farm. Vendors who can't type sell by voice note in Tamil or
+   Hindi in the same Nexconn chat. Vendors see demand before buying stock, so less unsold fish and fewer delivery trips.
+7. **The technology already scales.** Nexconn runs the chat, groups and live updates, so we run no chat servers; the
+   UPI hold moves to Razorpay or Cashfree UPI Reserve Pay; each bucket is one delivery with OTP handover.
+
+**The moat:** a weekly habit and the network of people who go to the same market — hard for a big e-commerce app to copy.
 
 ## Business model and growth
 
