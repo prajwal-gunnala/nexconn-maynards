@@ -302,7 +302,12 @@ export async function seedNexconn(data, nx, { logger = console, oldData = null }
   const oldGroups = new Set([
     ...Object.keys(oldData?.communities ?? {}).map((id) => streetGroupId(id)),
     ...Object.keys(data.communities ?? {}).map((id) => streetGroupId(id)),
-    ...Object.values(oldData?.buckets ?? {}).filter((b) => b.orderId || b.status !== 'live').map((b) => bucketGroupId(b.id)),
+    // Bucket groups are tagged with the seed that made them (service.groupOf), so dismiss the old ones by
+    // their real id. Live buckets get a group too if an earlier run filled them; leaving it makes a "still
+    // live" bucket's chat show up in Chats after a re-seed.
+    ...Object.values(oldData?.buckets ?? {}).flatMap((b) => [
+      b.groupId, bucketGroupId(b.id, oldData?.seedTag ?? ''), bucketGroupId(b.id),
+    ]).filter(Boolean),
     ...Object.keys(data.buckets ?? {}).map((id) => bucketGroupId(id)),
   ]);
   for (const channelId of oldGroups) {
