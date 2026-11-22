@@ -40,7 +40,13 @@ docs/     Write-up, API contract, design notes, reviews
 scripts/  Nexconn dev helper (tokens, groups, cards, metadata)
 ```
 
-## Run it locally
+## Standalone demo APK
+
+The release APK needs no server: bucket rules, UPI-hold sandbox, orders and pickup OTPs run on-device from a demo
+snapshot, and chat (and calls) go straight to Nexconn with the App Key above. Install, log in with a demo number and
+OTP `1234`.
+
+## Run the full stack locally
 
 1. Create `.env` in the repo root (never committed):
    ```
@@ -48,7 +54,7 @@ scripts/  Nexconn dev helper (tokens, groups, cards, metadata)
    NEXCONN_APP_SECRET=<from console.nexconn.ai>
    ```
 2. Server: `cd server && npm install && npm run seed && npm start` (port 8787). Tests: `npm test`.
-3. App: `cd app && flutter pub get && flutter run --dart-define=API_BASE=http://localhost:8787`
+3. App against the real API: `cd app && flutter pub get && flutter run --dart-define=API_BASE=http://localhost:8787`
    (on an emulator/device over USB: `adb reverse tcp:8787 tcp:8787`).
 
 ## Built during the challenge
