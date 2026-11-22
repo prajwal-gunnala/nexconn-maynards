@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Jugaad Street — buy the whole fish, share it with your street</title>
+<meta name="description" content="Bulk group-buying for local communities. Split a whole fish with your neighbours inside one live Nexconn group chat. UPI money is held, never paid, until the bucket fills.">
+<meta name="theme-color" content="#E4572E">
+<link rel="icon" href="assets/brand/mark.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--tomato:#E4572E;--tomato-d:#C9431D;--teal:#1F5F66;--teal-d:#174A50;--peach:#FFC9A8;--cream:#FFF1EC;--paper:#FFFAF7;--ink:#1F1A17;--mute:#6E625B;--line:#EADCD4;
+--disp:'Bricolage Grotesque',system-ui,sans-serif;--text:'Inter Tight',system-ui,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{font-family:var(--text);font-size:17px;line-height:1.55;color:var(--ink);background:var(--paper);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+img{display:block;max-width:100%;height:auto}
+a{color:inherit}
+.wrap{max-width:1240px;margin:0 auto;padding:0 32px}
+.i{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+h1,h2,h3{font-family:var(--disp);font-weight:800;letter-spacing:-.035em;line-height:.98}
+.kick{font-size:13px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--tomato)}
+
+/* nav */
+nav{position:sticky;top:0;z-index:20;background:#fffaf7e6;backdrop-filter:saturate(1.4) blur(8px);-webkit-backdrop-filter:saturate(1.4) blur(8px);border-bottom:1px solid transparent;transition:border-color .2s}
+nav.sc{border-color:var(--line)}
+nav .wrap{display:flex;align-items:center;justify-content:space-between;height:68px;gap:16px}
+nav .logo img{height:30px;width:auto}
+nav ul{display:flex;gap:30px;list-style:none;font-size:15px;font-weight:500}
+nav ul a{text-decoration:none;color:var(--mute)}nav ul a:hover{color:var(--ink)}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;gap:10px;height:54px;padding:0 24px;border-radius:14px;font-weight:600;font-size:16px;text-decoration:none;transition:background .15s,transform .15s;white-space:nowrap}
+.btn:active{transform:scale(.98)}
+.btn.p{background:var(--tomato);color:#fff}.btn.p:hover{background:var(--tomato-d)}
+.btn.g{background:#fff;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)}.btn.g:hover{box-shadow:inset 0 0 0 1.5px var(--ink)}
+.btn.sm{height:42px;padding:0 16px;font-size:14px;border-radius:11px}
+.btn .play{width:26px;height:26px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center}
+.btn .play .i{width:11px;height:11px;fill:currentColor;stroke:none;margin-left:2px}
+.tlink{display:inline-flex;align-items:center;gap:6px;font-weight:600;font-size:15px;text-decoration:none;border-bottom:1.5px solid currentColor;padding-bottom:1px}
+.tlink .i{width:16px;height:16px}
+
+/* hero */
+.hero{padding:64px 0 56px}
+.hero .wrap{display:grid;grid-template-columns:1fr 1.08fr;gap:56px;align-items:center}
+.hero h1{font-size:clamp(46px,6.6vw,92px);margin:18px 0 22px}
+.hero h1 em{font-style:normal;color:var(--tomato)}
+.hero .lede{font-size:20px;color:var(--mute);max-width:30ch;line-height:1.5}
+.hero .cta{display:flex;gap:12px;flex-wrap:wrap;margin:34px 0 22px}
+.hero .meta{display:flex;gap:22px;align-items:center;flex-wrap:wrap;font-size:14px;color:var(--mute)}
+.hero .meta span{display:inline-flex;align-items:center;gap:7px}
+.hero .meta .i{width:16px;height:16px;color:var(--teal)}
+.visual{position:relative;padding:0 0 90px 120px}
+.visual .art{border-radius:26px;width:100%;aspect-ratio:2752/1536}
+.visual .ph{position:absolute;left:0;bottom:0;width:31%;border-radius:34px;border:9px solid var(--ink);background:var(--ink);box-shadow:0 30px 60px -20px #1f1a1766;overflow:hidden;aspect-ratio:1344/2992}
+.visual .ph:before{content:"";position:absolute;top:8px;left:50%;width:10px;height:10px;margin-left:-5px;background:#000;border-radius:50%;z-index:2}
+.visual .ph img{width:100%;height:100%;object-fit:cover;object-position:top}
+.visual .card{position:absolute;right:-8px;bottom:6px;background:#fff;border-radius:16px;padding:14px 16px;width:236px;box-shadow:0 18px 40px -18px #1f1a1755;font-size:13px}
+.visual .card b{display:block;font-size:15px}
+.visual .card .bar{height:6px;border-radius:6px;background:var(--cream);margin:10px 0 7px;overflow:hidden}
+.visual .card .bar i{display:block;height:100%;width:67%;background:var(--tomato);border-radius:6px}
+.visual .card .row{display:flex;justify-content:space-between;color:var(--mute)}
+.visual .card .live{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--tomato);margin-bottom:6px}
+.visual .card .live:before{content:"";width:7px;height:7px;border-radius:50%;background:var(--tomato)}
+
+/* film */
+.film{padding:8px 0 96px}
+.film .wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:48px;align-items:end}
+.film .head{border-top:1px solid var(--line);padding-top:28px;align-self:stretch;display:flex;flex-direction:column;justify-content:space-between;gap:16px}
+.film .head p{max-width:28ch}
+.film h2{font-size:clamp(26px,3vw,36px)}
+.film .head p{color:var(--mute);font-size:17px}
+.player{position:relative;aspect-ratio:16/9;border-radius:22px;overflow:hidden;background:var(--ink)}
+.player iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.player .poster{all:unset;cursor:pointer;position:absolute;inset:0;display:block}
+.player .poster img{width:100%;height:100%}
+.player .poster:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#1f1a17b3 0%,#1f1a1740 45%,transparent 70%)}
+.player .pl{position:absolute;z-index:1;left:48px;bottom:44px;display:flex;align-items:center;gap:18px;color:#fff}
+.player .pl i{width:76px;height:76px;border-radius:50%;background:var(--tomato);display:grid;place-items:center;transition:transform .2s}
+.player .poster:hover .pl i{transform:scale(1.06)}
+.player .pl .i{width:26px;height:26px;fill:#fff;stroke:none;margin-left:4px}
+.player .pl b{font-family:var(--disp);font-size:28px;letter-spacing:-.02em;line-height:1.1;display:block}
+.player .pl small{font-size:15px;opacity:.85}
+.player .poster:focus-visible{outline:3px solid var(--tomato);outline-offset:3px}
+
+/* story */
+.story{padding:0 0 104px}
+.sec-h{display:grid;grid-template-columns:1.2fr 1fr;gap:40px;align-items:end;margin-bottom:44px}
+.sec-h h2{font-size:clamp(36px,4.6vw,64px)}
+.sec-h p{color:var(--mute);font-size:18px;max-width:42ch}
+.beats{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;list-style:none}
+.beat .pic{border-radius:20px;overflow:hidden;aspect-ratio:2752/1536;background:var(--cream)}
+.beat .pic img{width:100%;height:100%}
+.beat .pic.app{background:var(--peach);position:relative}
+.beat .pic.app img{position:absolute;width:56%;height:auto;left:50%;top:9%;transform:translateX(-50%);border-radius:14px 14px 0 0;box-shadow:0 20px 40px -14px #1f1a1766}
+.beat .n{font-family:var(--disp);font-weight:700;font-size:15px;color:var(--tomato);margin:22px 0 8px;display:flex;align-items:center;gap:10px}
+.beat .n:after{content:"";flex:1;height:1px;background:var(--line)}
+.beat h3{font-size:27px;letter-spacing:-.025em;line-height:1.08;margin-bottom:8px}
+.beat p{color:var(--mute);font-size:16px}
+
+/* try */
+.try{background:var(--cream);padding:96px 0}
+.try .wrap>*,.nx .wrap>*,.hero .wrap>*{min-width:0}
+.try .wrap{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"head phone" "ctl phone";column-gap:72px;align-content:center;align-items:end}
+.try .thead{grid-area:head}.try .tctl{grid-area:ctl;align-self:start}.try .phonebox{grid-area:phone;align-self:center}
+.try h2{font-size:clamp(36px,4.6vw,64px);margin:14px 0 14px}
+.try .sub{color:var(--mute);font-size:18px;max-width:44ch}
+.chips{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:30px 0 18px}
+.chips button{all:unset;cursor:pointer;box-sizing:border-box;padding:10px 12px;border-radius:12px;background:#fff;font-size:13.5px;font-weight:600;line-height:1.2;color:var(--ink);transition:background .15s,color .15s}
+.chips button span{display:block;font-family:var(--disp);font-size:12px;color:var(--mute);margin-bottom:2px}
+.chips button:hover{background:#fff;box-shadow:inset 0 0 0 1.5px var(--peach)}
+.chips button.on{background:var(--ink);color:#fff}.chips button.on span{color:var(--peach)}
+.chips button:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+.explain{min-height:96px;padding:4px 0 0}
+.explain h3{font-size:26px;letter-spacing:-.02em;margin-bottom:6px}
+.explain p{color:var(--mute);max-width:52ch}
+.logins{margin-top:34px;border-top:1px solid #e9cfc1;padding-top:22px}
+.logins h4{font-size:14px;font-weight:600;margin-bottom:12px;display:flex;gap:8px;align-items:center}
+.logins h4 .i{width:17px;height:17px;color:var(--teal)}
+.logins table{border-collapse:collapse;width:100%;max-width:520px;font-size:15px}
+.logins td{padding:9px 0;border-bottom:1px solid #f0dbd0}
+.logins td:last-child{text-align:right;font-variant-numeric:tabular-nums;font-weight:600;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:14.5px}
+.logins td small{color:var(--mute);font-size:13px;margin-left:8px}
+.logins .otp{color:var(--tomato);font-weight:700}
+.phonebox{display:flex;flex-direction:column;align-items:center;gap:16px}
+.phone{width:300px;aspect-ratio:9/20;background:var(--ink);border-radius:46px;padding:10px;box-shadow:0 40px 80px -30px #1f1a1780;position:relative;cursor:pointer}
+.phone:before{content:"";position:absolute;top:19px;left:50%;width:74px;height:8px;margin-left:-37px;background:#000;border-radius:9px;z-index:3}
+.screen{position:relative;width:100%;height:100%;border-radius:36px;overflow:hidden;background:#fff}
+.screen .sl{position:absolute;inset:0;transition:transform .35s ease;will-change:transform}
+.screen img,.screen video{width:100%;height:100%;object-fit:cover;object-position:top;display:block}
+.screen .sl.out-l{transform:translateX(-100%)}.screen .sl.out-r{transform:translateX(100%)}
+.pager{display:flex;align-items:center;gap:14px;font-size:14px;color:var(--mute);font-variant-numeric:tabular-nums}
+.pager button{all:unset;cursor:pointer;width:40px;height:40px;border-radius:50%;background:#fff;display:grid;place-items:center;color:var(--ink)}
+.pager button:hover{background:var(--ink);color:#fff}
+.pager button:focus-visible{outline:2px solid var(--teal)}
+
+/* nexconn */
+.nx{background:var(--teal);color:var(--cream);padding:96px 0}
+.nx .wrap{display:grid;grid-template-columns:1fr 1.15fr;gap:72px}
+.nx .kick{color:var(--peach)}
+.nx h2{font-size:clamp(36px,4.6vw,64px);margin:14px 0 16px;color:#fff}
+.nx .sub{color:#cfe0df;font-size:18px;max-width:40ch}
+.key{margin:34px 0 26px;background:var(--teal-d);border-radius:16px;padding:18px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:420px}
+.key small{display:block;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#9fc0bd;margin-bottom:2px}
+.key code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:22px;font-weight:600;color:#fff;letter-spacing:.02em}
+.key button{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--peach);padding:8px 10px;border-radius:9px}
+.key button:hover{background:#ffffff14}.key button .i{width:15px;height:15px}
+.nx .tlink{color:#fff}
+.specs{list-style:none;border-top:1px solid #ffffff26}
+.specs li{display:grid;grid-template-columns:44px 1fr auto;gap:16px;align-items:center;padding:17px 0;border-bottom:1px solid #ffffff26}
+.specs .ic{width:44px;height:44px;border-radius:12px;background:#ffffff12;display:grid;place-items:center;color:var(--peach)}
+.specs b{display:block;font-weight:600;color:#fff;font-size:17px}
+.specs span{font-size:14.5px;color:#b9d1cf}
+.specs em{font-style:normal;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:#9fc0bd;text-align:right}
+
+/* footer */
+footer{background:var(--ink);color:#bfb3ac;padding:40px 0;font-size:14px}
+footer .wrap{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap}
+footer .brand{display:flex;align-items:center;gap:12px;color:#fff;font-weight:600}
+footer .brand img{width:34px;height:34px;background:var(--tomato);border-radius:10px;padding:3px}
+footer nav{all:unset;display:flex;gap:22px;flex-wrap:wrap}
+footer a{text-decoration:none}footer a:hover{color:#fff}
+
+@media(max-width:1020px){
+ .hero .wrap,.nx .wrap{grid-template-columns:minmax(0,1fr);gap:48px}
+ .try .wrap{grid-template-columns:minmax(0,1fr);grid-template-areas:"head" "phone" "ctl";row-gap:32px}
+ .hero{padding-top:40px}
+ .visual{max-width:680px}
+ .sec-h{grid-template-columns:1fr;gap:14px}
+ .beats{grid-template-columns:1fr 1fr}
+}
+@media(max-width:720px){
+ .visual{padding:0 0 40px 96px;margin-top:64px}
+ body{font-size:16px}
+ .wrap{padding:0 20px}
+ nav ul{display:none}
+ nav .wrap{height:60px}nav .logo img{height:26px}
+ .hero{padding:28px 0 40px}
+ .hero h1{margin:14px 0 16px}
+ .hero .lede{font-size:18px}
+ .hero .cta{margin:26px 0 18px}
+ .hero .cta .btn{flex:1 1 100%;justify-content:center}
+ .visual{padding:0 0 44px 34px}
+ .visual .ph{width:38%;border-width:5px;border-radius:18px}
+ .visual .card{width:190px;padding:11px 12px;font-size:12px;right:-4px}
+ .visual .card b{font-size:13.5px}
+ .film{padding-bottom:72px}
+ .film .wrap{grid-template-columns:minmax(0,1fr);gap:20px}
+ .film .head{gap:6px}
+ .player{border-radius:14px}
+ .player .pl{left:18px;bottom:16px;gap:12px}.player .pl i{width:52px;height:52px}.player .pl .i{width:18px;height:18px}
+ .player .pl b{font-size:19px}.player .pl small{font-size:13px}
+ .story{padding-bottom:72px}
+ .sec-h{margin-bottom:30px}
+ .beats{grid-template-columns:1fr;gap:36px}
+ .try,.nx{padding:64px 0}
+ .chips{display:flex;overflow-x:auto;scrollbar-width:none;margin:22px -20px 16px;padding:0 20px}
+ .chips::-webkit-scrollbar{display:none}
+ .chips button{flex:none}
+ .phone{width:min(280px,76vw)}
+ .key code{font-size:19px}
+ .specs li{grid-template-columns:40px 1fr;gap:14px}
+ .specs .ic{width:40px;height:40px}
+ .specs em{display:none}
+ footer .wrap{flex-direction:column;align-items:flex-start}
+}
+</style></head><body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<symbol id="i-down" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></symbol>
+<symbol id="i-play" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></symbol>
+<symbol id="i-gh" viewBox="0 0 24 24"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></symbol>
+<symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
+<symbol id="i-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+<symbol id="i-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+<symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+<symbol id="i-msg" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></symbol>
+<symbol id="i-dm" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+<symbol id="i-cards" viewBox="0 0 24 24"><rect width="18" height="7" x="3" y="3" rx="1"/><rect width="9" height="7" x="3" y="14" rx="1"/><rect width="5" height="7" x="16" y="14" rx="1"/></symbol>
+<symbol id="i-sync" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></symbol>
+<symbol id="i-bot" viewBox="0 0 24 24"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></symbol>
+<symbol id="i-key" viewBox="0 0 24 24"><path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"/><circle cx="16.5" cy="7.5" r=".5"/></symbol>
+<symbol id="i-video" viewBox="0 0 24 24"><path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"/><rect x="2" y="6" width="14" height="12" rx="2"/></symbol>
+<symbol id="i-copy" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c2 0 2 .9 2 2"/></symbol>
+<symbol id="i-phone" viewBox="0 0 24 24"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></symbol>
+</svg>
+
+<nav id="nav"><div class="wrap">
+<a class="logo" href="#top" aria-label="Jugaad Street home"><img src="assets/brand/lockup.svg" alt="Jugaad Street" width="160" height="30"></a>
+<ul><li><a href="#how">How it works</a></li><li><a href="#try">Try it</a></li><li><a href="#nexconn">Nexconn</a></li></ul>
+<a class="btn p sm" href="https://github.com/prajwal-gunnala/nexconn-maynards/releases/latest/download/JugaadStreet.apk"><svg class="i"><use href="#i-down"/></svg>Get the app</a>
+</div></nav>
+
+<header class="hero" id="top"><div class="wrap">
+<div>
+<p class="kick">Bulk group-buying for your street</p>
+<h1>Buy the <em>whole fish</em>. Share it with your street.</h1>
+<p class="lede">The best catch is sold only whole. Split it with neighbours in one live chat, and nobody pays until every part is claimed.</p>
+<div class="cta">
+<a class="btn p" id="apk" href="https://github.com/prajwal-gunnala/nexconn-maynards/releases/latest/download/JugaadStreet.apk"><svg class="i"><use href="#i-down"/></svg>Download for Android</a>
+<a class="btn g" id="demo-link" href="#film"><span class="play"><svg class="i"><use href="#i-play"/></svg></span>Watch the 2-min demo</a>
+</div>
+<div class="meta">
+<a class="tlink" href="https://github.com/prajwal-gunnala/nexconn-maynards"><svg class="i"><use href="#i-gh"/></svg>View code</a>
+<span><svg class="i"><use href="#i-msg"/></svg>Built on the Nexconn Chat SDK</span>
+</div>
+</div>
+<div class="visual">
+<img class="art" src="assets/img/hero_fish.jpg" width="1600" height="893" alt="Illustration: a fish seller at Kasimedu harbour holds up a whole vanjaram on ice">
+<div class="ph"><img src="assets/img/app_home.jpg" width="720" height="1603" alt="Jugaad Street home screen for Sea Breeze Street"></div>
+<div class="card" aria-hidden="true"><span class="live">Live in street chat</span><b>Whole Vanjaram · 5 kg</b>
+<div class="bar"><i></i></div><div class="row"><span>2 of 3 parts</span><span>₹950 / part</span></div></div>
+</div>
+</div></header>
+
+<section class="film" id="film"><div class="wrap">
+<div class="head"><h2>See it in two minutes.</h2><div><p>From a whole fish at the harbour to a pickup code at the counter.</p><a class="tlink" href="https://youtu.be/b_FC3qWJCMM" style="margin-top:14px">Open on YouTube<svg class="i"><use href="#i-arrow"/></svg></a></div></div>
+<div class="player" id="player"><button type="button" class="poster" id="poster" aria-label="Play the Jugaad Street demo video">
+<img src="assets/img/film_poster.jpg" width="1600" height="893" alt="" loading="lazy">
+<span class="pl"><i><svg class="i"><use href="#i-play"/></svg></i><span><b>Jugaad Street</b><small>The demo · 2 min</small></span></span></button></div>
+</div></section>
+
+<section class="story" id="how"><div class="wrap">
+<div class="sec-h"><h2>One fish. Three neighbours. One order.</h2>
+<p>Anyone can start a bucket for anything that is cheaper in bulk: a whole seer, a crate of mangoes, a sack of rice.</p></div>
+<ol class="beats">
+<li class="beat"><div class="pic"><img src="assets/img/whole_only.jpg" width="1200" height="670" alt="Illustration: a family at a fish stall; the seller sells the fish only whole"></div>
+<p class="n">01</p><h3>Sold only whole</h3><p>The fish is too big for one family. The seller will not cut it for you alone.</p></li>
+<li class="beat"><div class="pic app"><img src="assets/img/app_card.jpg" width="600" height="907" alt="Live bucket card in the street chat: Whole Vanjaram, 2 of 3 parts joined"></div>
+<p class="n">02</p><h3>Claim your part in one live chat</h3><p>Head, middle or tail. The bucket card fills in the street group as neighbours join.</p></li>
+<li class="beat"><div class="pic"><img src="assets/img/meet_gate.jpg" width="1200" height="670" alt="Illustration: two neighbours meet at the market gate and share the fish"></div>
+<p class="n">03</p><h3>Held, then paid. Or meet there.</h3><p>UPI holds your money until the bucket fills. Or book your half and meet at the gate. One order, one pickup code.</p></li>
+</ol>
+</div></section>
+
+<section class="try" id="try"><div class="wrap">
+<div class="thead">
+<p class="kick">Try it here</p>
+<h2>Tap through a real order.</h2>
+<p class="sub">Ten real screens from the app. Tap the phone, the steps, or use the arrow keys.</p>
+</div>
+<div class="tctl">
+<div class="chips" id="chips" role="tablist" aria-label="Prototype steps"></div>
+<div class="explain" id="explain" aria-live="polite"></div>
+<div class="logins">
+<h4><svg class="i"><use href="#i-phone"/></svg>Demo logins for the APK · OTP is always <span class="otp">1234</span></h4>
+<table>
+<tr><td>Ananya<small>Member</small></td><td>9000000001</td></tr>
+<tr><td>Priya<small>Street admin</small></td><td>9000000005</td></tr>
+<tr><td>Sri Balaji<small>Vendor</small></td><td>9000000012</td></tr>
+</table>
+</div>
+</div>
+<div class="phonebox">
+<div class="phone" id="phone" aria-label="App prototype. Tap to advance."><div class="screen" id="screen"></div></div>
+<div class="pager"><button type="button" id="prev" aria-label="Previous step"><svg class="i"><use href="#i-left"/></svg></button><span id="count">1 / 10</span><button type="button" id="next" aria-label="Next step"><svg class="i"><use href="#i-right"/></svg></button></div>
+</div>
+</div></section>
+
+<section class="nx" id="nexconn"><div class="wrap">
+<div>
+<p class="kick">Built on Nexconn</p>
+<h2>Every chat, card and call.</h2>
+<p class="sub">The street, the bucket and the pickup all happen in Nexconn channels. No separate backend chat.</p>
+<div class="key"><div><small>Nexconn App Key</small><code id="appkey">tdrvipkstz0f5</code></div><button type="button" id="copy"><svg class="i"><use href="#i-copy"/></svg><span>Copy</span></button></div>
+<a class="tlink" href="https://github.com/prajwal-gunnala/nexconn-maynards"><svg class="i"><use href="#i-gh"/></svg>Source on GitHub<svg class="i"><use href="#i-arrow"/></svg></a>
+</div>
+<ul class="specs">
+<li><span class="ic"><svg class="i"><use href="#i-msg"/></svg></span><div><b>Chat SDK + Chat UI kit</b><span>Conversation list and chat screens</span></div><em>chat</em></li>
+<li><span class="ic"><svg class="i"><use href="#i-users"/></svg></span><div><b>Group channels</b><span>One per street, one per bucket</span></div><em>group</em></li>
+<li><span class="ic"><svg class="i"><use href="#i-dm"/></svg></span><div><b>Direct channels</b><span>Buyer to vendor, neighbour to neighbour</span></div><em>direct</em></li>
+<li><span class="ic"><svg class="i"><use href="#i-cards"/></svg></span><div><b>Custom message cards</b><span>Bucket, event, order and OTP cards</span></div><em>js:bucket</em></li>
+<li><span class="ic"><svg class="i"><use href="#i-sync"/></svg></span><div><b>Live message metadata</b><span>Cards fill in place as parts are claimed</span></div><em>metadata</em></li>
+<li><span class="ic"><svg class="i"><use href="#i-bot"/></svg></span><div><b>Bot messages</b><span>Pickup codes and order updates</span></div><em>bot</em></li>
+<li><span class="ic"><svg class="i"><use href="#i-key"/></svg></span><div><b>Access tokens</b><span>Issued server-side per user</span></div><em>token</em></li>
+<li><span class="ic"><svg class="i"><use href="#i-video"/></svg></span><div><b>Call SDK</b><span>1-to-1 and group voice and video calls</span></div><em>call</em></li>
+</ul>
+</div></section>
+
+<footer><div class="wrap">
+<div class="brand"><img src="assets/brand/mark.svg" alt="">Team Maynards · Nexconn Build Challenge 2026</div>
+<nav><a href="https://github.com/prajwal-gunnala/nexconn-maynards/releases/latest/download/JugaadStreet.apk">Android APK</a><a href="#film">Demo video</a><a href="https://github.com/prajwal-gunnala/nexconn-maynards">GitHub</a></nav>
+</div></footer>
+
+<script>
+(function(){
+var S=[
+["Sign in","Your number, one code","Sign in with your phone number and an OTP. Your number is only used to sign you in and send UPI hold requests."],
+["Your street","Neighbours buying together","Home shows your street, the live buckets, and what the street has saved this month."],
+["Start a bucket","Anyone can start one","Pick a template like a whole seer fish, set the price and the cutoff, and post it to your street."],
+["Pick a cut","Head, middle or tail","See what is taken and what is left, with your price, before you commit."],
+["Hold with UPI","Held, not paid","Your money is held with UPI. Nothing is paid unless the bucket fills; otherwise it is released."],
+["Live chat","The card fills in real time","The bucket card in the street's Nexconn group updates as neighbours claim their parts.","chat.mp4"],
+["Book & meet","Meet at the market","Book your share and see the gate, the time, and who else is coming."],
+["Pickup OTP","Your code at the counter","Your order carries a pickup code, also sent by the Jugaad Street bot in chat."],
+["Handover","Code in, money out","The vendor enters your code, hands over your share, and is paid on completion."],
+["Wallet","Every rupee, visible","See what is held, paid and released, and how much you saved with your neighbours."]];
+var cur=0,scr=document.getElementById('screen'),ch=document.getElementById('chips'),ex=document.getElementById('explain'),cn=document.getElementById('count');
+S.forEach(function(s,i){
+ var b=document.createElement('button');b.type='button';b.setAttribute('role','tab');
+ b.innerHTML='<span>'+(i+1<10?'0':'')+(i+1)+'</span>'+s[0];
+ b.onclick=function(){go(i)};ch.appendChild(b);
+ var im=new Image();im.src='assets/screens/s'+(i+1)+'.jpg'});
+function mk(i){var d=document.createElement('div');d.className='sl';
+ var im=document.createElement('img');im.src='assets/screens/s'+(i+1)+'.jpg';im.alt=S[i][0]+' screen';d.appendChild(im);
+ if(S[i][3]){var v=document.createElement('video');v.src='assets/screens/'+S[i][3];v.muted=true;v.loop=true;v.autoplay=true;v.playsInline=true;v.setAttribute('muted','');v.style.position='absolute';v.style.inset=0;d.appendChild(v);var p=v.play();if(p&&p.catch)p.catch(function(){})}
+ return d}
+function go(i,first){
+ i=(i+S.length)%S.length;var dir=i>=cur?1:-1,old=scr.firstChild,n=mk(i);
+ if(first){scr.appendChild(n)}else{
+  n.classList.add(dir>0?'out-r':'out-l');scr.appendChild(n);n.offsetWidth;
+  n.classList.remove('out-r','out-l');old.classList.add(dir>0?'out-l':'out-r');
+  setTimeout(function(){if(old.parentNode)old.remove()},400)}
+ cur=i;
+ [].forEach.call(ch.children,function(b,k){b.classList.toggle('on',k==i);b.setAttribute('aria-selected',k==i)});
+ var a=ch.children[i];if(!first&&ch.scrollWidth>ch.clientWidth)ch.scrollTo({left:a.offsetLeft-20,behavior:'smooth'});
+ cn.textContent=(i+1)+' / '+S.length;
+ ex.innerHTML='<h3>'+S[i][1]+'</h3><p>'+S[i][2]+'</p>'}
+var ph=document.getElementById('phone');
+ph.onclick=function(){go(cur+1)};
+document.getElementById('next').onclick=function(){go(cur+1)};
+document.getElementById('prev').onclick=function(){go(cur-1)};
+document.addEventListener('keydown',function(e){var r=document.getElementById('try').getBoundingClientRect();if(r.bottom<0||r.top>innerHeight)return;
+ if(e.key=='ArrowRight')go(cur+1);if(e.key=='ArrowLeft')go(cur-1)});
+var x0=null;
+ph.addEventListener('touchstart',function(e){x0=e.touches[0].clientX},{passive:true});
+ph.addEventListener('touchend',function(e){if(x0===null)return;var dx=e.changedTouches[0].clientX-x0;x0=null;if(Math.abs(dx)>40){go(cur+(dx<0?1:-1));ph._sw=1;setTimeout(function(){ph._sw=0},400)}});
+ph.addEventListener('click',function(e){if(ph._sw)e.stopImmediatePropagation()},true);
+go(0,true);
+var cp=document.getElementById('copy');cp.onclick=function(){
+ var t=document.getElementById('appkey').textContent;
+ try{navigator.clipboard.writeText(t).then(function(){cp.lastChild.textContent='Copied'})}catch(e){}};
+function play(){var pl=document.getElementById('player');if(pl.querySelector('iframe'))return;
+ var f=document.createElement('iframe');f.src='https://www.youtube-nocookie.com/embed/b_FC3qWJCMM?autoplay=1&rel=0&playsinline=1';f.title='Jugaad Street demo';
+ f.allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';f.referrerPolicy='strict-origin-when-cross-origin';f.allowFullscreen=true;
+ pl.innerHTML='';pl.appendChild(f)}
+document.getElementById('poster').onclick=play;
+document.getElementById('demo-link').addEventListener('click',function(){setTimeout(play,450)});
+var nv=document.getElementById('nav');addEventListener('scroll',function(){nv.classList.toggle('sc',scrollY>8)},{passive:true});
+})();
+</script></body></html>
