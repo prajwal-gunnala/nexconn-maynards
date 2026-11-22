@@ -8,27 +8,27 @@ import '../../core/theme/tokens.dart';
 
 /// Size (dp) of the mark's 512-unit art box on the splash. Must match the native launch screens:
 /// `res/drawable/splash_icon.xml` (Android 12+, scale 230/512) and `res/drawable-*/splash_logo.png` (older).
-const double kSplashArtExtent = 230;
+const double kSplashArtExtent = 170;
 
-/// The glyph's visual centre in mark.svg units (centre of its enclosing circle). Native splashes put this
-/// point at the centre of the screen, so we do too.
-const Offset _kVisualCentre = Offset(256, 250);
+/// The glyph's visual centre in mark units before mark.svg's -10 shift (centre of handle top .. bowl bottom).
+/// Native splashes put this point at the centre of the screen, so we do too.
+const Offset _kVisualCentre = Offset(256, 266);
 
 // Timeline (ms) of the intro, then a short fade into the app.
 const _kIntroMs = 1450;
 const _kFadeMs = 260;
 const _kBounce = (start: 80, end: 470);
-const _kGoodsStart = 360;
-const _kGoodsStagger = 120;
+const _kGoodsStart = 360; // first bowl segment
+const _kGoodsStagger = 130;
 const _kGoodsPop = 320;
 const _kTitle = (start: 860, end: 1180);
 const _kTagline = (start: 960, end: 1280);
 
 /// Shows the animated brand splash over [child] once, on cold start, then removes itself.
 ///
-/// Hand-off: Android shows the native launch screen (tomato + empty white basket, same size and position)
+/// Hand-off: Android shows the native launch screen (tomato + the white handle, same size and position)
 /// until Flutter draws its first frame. That first frame is this overlay at t = 0, identical to the native
-/// screen. The basket hops, the three goods pop in, the name slides in, and the overlay fades to the app,
+/// screen. The handle hops, the three bowl segments pop in, the name slides in, and the overlay fades to the app,
 /// which has been building (router, first screen, first fetches) underneath the whole time.
 class SplashOverlay extends StatefulWidget {
   const SplashOverlay({super.key, required this.child});
@@ -135,8 +135,8 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
               color: AppColors.brand,
               child: LayoutBuilder(builder: (context, box) {
                 final centre = Offset(box.maxWidth / 2, box.maxHeight / 2);
-                // Text starts under the basket's lowest point (y = 410 in mark units) plus a gap.
-                final textTop = centre.dy + (410 - _kVisualCentre.dy) * k + 30;
+                // Text starts under the bowl's lowest point (y = 454 in mark units) plus a gap.
+                final textTop = centre.dy + (454 - _kVisualCentre.dy) * k + 30;
                 return Stack(children: [
                   Positioned.fill(
                     child: CustomPaint(painter: BasketPainter(_intro, extent: kSplashArtExtent, centre: centre)),
@@ -211,8 +211,9 @@ class _SlideIn extends AnimatedWidget {
   }
 }
 
-/// Paints mark.svg's basket (handle, three goods, body, weave) with the same geometry, driven by the intro
-/// controller [t] (0..1 over [_kIntroMs]): a small hop with a squash on landing, then the goods popping in.
+/// Paints mark.svg (handle + three bowl segments) with the same geometry, driven by the intro controller [t]
+/// (0..1 over [_kIntroMs]): the handle hops with a squash on landing (the native splash shows the handle
+/// alone), then the three bowl segments pop in one by one, left to right.
 /// The glyph's visual centre is painted at [centre], with the 512-unit art box [extent] dp wide.
 class BasketPainter extends CustomPainter {
   BasketPainter(this.t, {required this.extent, required this.centre}) : super(repaint: t);
@@ -222,38 +223,32 @@ class BasketPainter extends CustomPainter {
   final Offset centre;
 
   static final _handle = Path()
-    ..moveTo(136, 252)
-    ..cubicTo(136, 52, 376, 52, 376, 252);
-  static final _body = Path()
-    ..moveTo(108, 250)
-    ..lineTo(404, 250)
-    ..cubicTo(400, 344, 342, 410, 256, 410)
-    ..cubicTo(170, 410, 112, 344, 108, 250)
-    ..close();
-  static final _weave = Path()
-    ..moveTo(136, 300)
-    ..cubicTo(200, 318, 312, 318, 376, 300)
-    ..moveTo(166, 352)
-    ..cubicTo(216, 368, 296, 368, 346, 352);
+    ..moveTo(140, 210)
+    ..arcToPoint(const Offset(372, 210), radius: const Radius.circular(116));
 
-  /// (centre, radius, colour) in mark.svg order; [_popOrder] is the order they appear in.
-  static const _goods = [
-    (Offset(194, 240), 34.0, Color(0xFFFFD3C2)),
-    (Offset(318, 240), 34.0, Color(0xFFFFD3C2)),
-    (Offset(256, 224), 44.0, Color(0xFFFFF1EC)),
+  /// Bowl segments of the 204-radius half disc centred (256, 250), cut by two 26-wide gaps.
+  static Path _segment(double x0, double x1) {
+    const c = Offset(256, 250);
+    const r = 204.0;
+    double yAt(double x) => c.dy + math.sqrt(r * r - (x - c.dx) * (x - c.dx));
+    return Path()
+      ..moveTo(x0, 250)
+      ..lineTo(x1, 250)
+      ..lineTo(x1, yAt(x1))
+      ..arcToPoint(Offset(x0, yAt(x0)), radius: const Radius.circular(r))
+      ..close();
+  }
+
+  static final _segments = [
+    (_segment(52, 176), const Offset(114, 350), Colors.white),
+    (_segment(202, 310), const Offset(256, 350), const Color(0xFFFFC9A8)),
+    (_segment(336, 460), const Offset(398, 350), const Color(0xFFFFF1EC)),
   ];
-  static const _popOrder = [0, 2, 1]; // left, middle, right
 
-  static final _white = Paint()..color = Colors.white;
   static final _handlePaint = Paint()
     ..color = Colors.white
     ..style = PaintingStyle.stroke
-    ..strokeWidth = 26
-    ..strokeCap = StrokeCap.round;
-  static final _weavePaint = Paint()
-    ..color = AppColors.brand
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = 15
+    ..strokeWidth = 30
     ..strokeCap = StrokeCap.round;
 
   static double _seg(double ms, num start, num end) => ((ms - start) / (end - start)).clamp(0.0, 1.0);
@@ -270,7 +265,7 @@ class BasketPainter extends CustomPainter {
     } else if (b < 0.72) {
       dy = -26 * (1 - Curves.easeIn.transform((b - 0.4) / 0.32));
     } else if (b < 1) {
-      squash = math.sin((b - 0.72) / 0.28 * math.pi); // 0 → 1 → 0
+      squash = math.sin((b - 0.72) / 0.28 * math.pi); // 0 -> 1 -> 0
     }
     final sy = 1 - 0.07 * squash, sx = 1 + 0.04 * squash;
 
@@ -279,25 +274,27 @@ class BasketPainter extends CustomPainter {
       ..translate(centre.dx, centre.dy)
       ..scale(extent / 512)
       ..translate(-_kVisualCentre.dx, -_kVisualCentre.dy)
-      // squash about the basket's base, after the hop
-      ..translate(256, 410 + dy)
+      // squash about the bowl's base, after the hop
+      ..translate(256, 454 + dy)
       ..scale(sx, sy)
-      ..translate(-256, -410);
+      ..translate(-256, -454);
 
     canvas.drawPath(_handle, _handlePaint);
-    for (var i = 0; i < _goods.length; i++) {
-      final slot = _popOrder.indexOf(i);
-      final start = _kGoodsStart + slot * _kGoodsStagger;
+    for (var i = 0; i < _segments.length; i++) {
+      final start = _kGoodsStart + i * _kGoodsStagger;
       final p = _seg(ms, start, start + _kGoodsPop);
       if (p <= 0) continue;
       final s = Curves.easeOutBack.transform(p); // small overshoot past 1
-      final (c, r, colour) = _goods[i];
-      canvas.drawCircle(c, r * s, Paint()..color = colour);
+      final (path, origin, colour) = _segments[i];
+      canvas
+        ..save()
+        ..translate(origin.dx, origin.dy)
+        ..scale(s)
+        ..translate(-origin.dx, -origin.dy)
+        ..drawPath(path, Paint()..color = colour)
+        ..restore();
     }
-    canvas
-      ..drawPath(_body, _white)
-      ..drawPath(_weave, _weavePaint)
-      ..restore();
+    canvas.restore();
   }
 
   @override

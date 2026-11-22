@@ -3,7 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import '../core/theme/tokens.dart';
 
-/// The Jugaad Street mark (a market basket holding three shares) on a brand tile.
+/// The Jugaad Street mark (a basket whose bowl is cut into three shares) on a brand tile.
 class BrandMark extends StatelessWidget {
   const BrandMark({super.key, this.size = 40, this.radius});
 
@@ -25,7 +25,7 @@ class BrandMark extends StatelessWidget {
   }
 }
 
-/// White basket only (for brand-coloured backgrounds such as the splash).
+/// White basket glyph only (for brand-coloured backgrounds such as the splash).
 class BrandGlyph extends StatelessWidget {
   const BrandGlyph({super.key, this.size = 96});
   final double size;

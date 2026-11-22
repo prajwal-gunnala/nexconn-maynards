@@ -1,7 +1,2 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- Jugaad Street mark: a market basket holding three shares. -->
-  <path d="M136 252 C136 52 376 52 376 252" fill="none" stroke="#FFFFFF" stroke-width="26" stroke-linecap="round"/>
-    <circle cx="194" cy="240" r="34" fill="#FFD3C2"/><circle cx="318" cy="240" r="34" fill="#FFD3C2"/><circle cx="256" cy="224" r="44" fill="#FFF1EC"/>
-    <path d="M108 250 H404 C400 344 342 410 256 410 C170 410 112 344 108 250 Z" fill="#FFFFFF"/>
-    <path d="M136 300 C200 318 312 318 376 300 M166 352 C216 368 296 368 346 352" fill="none" stroke="#E4572E" stroke-width="15" stroke-linecap="round"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!-- Jugaad Street mark: a basket cut into three shares (glyph centre 256,266 before the -10 shift). -->
+<g transform="translate(0 -10)"><path d="M52 250H176V437.65A204 204 0 0 1 52 250Z" fill="#FFFFFF"/><path d="M202 250H310V446.7A204 204 0 0 1 202 446.7Z" fill="#FFC9A8"/><path d="M336 250H460A204 204 0 0 1 336 437.65Z" fill="#FFF1EC"/><path d="M140 210A116 116 0 0 1 372 210" fill="none" stroke="#FFFFFF" stroke-width="30" stroke-linecap="round"/></g></svg>
