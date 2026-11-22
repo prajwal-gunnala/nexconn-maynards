@@ -120,7 +120,12 @@ class CallService {
   Future<void> _maybeInit() async {
     if (!supported || !nexconn.isConnected) return;
     final uid = nexconn.userId;
-    if (uid == null || uid == _initedFor) return;
+    if (uid == null) {
+      // The SDK reports "connected" a moment before connect() records the user id: try again shortly.
+      Future.delayed(const Duration(milliseconds: 500), _maybeInit);
+      return;
+    }
+    if (uid == _initedFor) return;
     _initedFor = uid;
     try {
       final r = await _ch.invokeMapMethod<String, Object?>('init', {'userId': uid});
