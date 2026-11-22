@@ -36,6 +36,10 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+            // The Nexconn/RongCloud SDK loads message types and native bridges by reflection; R8 shrinking
+            // trips on its bundled Tika (missing javax.xml.stream) and risks stripping classes at runtime.
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
 }
