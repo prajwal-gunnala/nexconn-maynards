@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:ai_nexconn_chat_plugin/ai_nexconn_chat_plugin.dart' show GroupMembersByRoleQueryParams;
 import 'package:ai_nexconn_chatui_plugin/ai_nexconn_chatui_plugin.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +13,7 @@ import '../../core/nexconn/nexconn_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/tokens.dart';
 import '../../widgets/widgets.dart';
+import '../call/call_screen.dart';
 import 'chat_avatar.dart';
 import 'chat_directory.dart';
 import 'js_bubbles.dart';
@@ -203,8 +207,13 @@ class _ChatHeaderState extends State<ChatHeader> {
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
                   Text(title, style: AppText.heading, maxLines: 1, overflow: TextOverflow.ellipsis),
-                  if (subtitle != null)
-                    Text(subtitle, style: AppText.caption, maxLines: 1, overflow: TextOverflow.ellipsis),
+                  Row(children: [
+                    if (subtitle != null) ...[
+                      Flexible(child: Text(subtitle, style: AppText.caption, maxLines: 1, overflow: TextOverflow.ellipsis)),
+                      const SizedBox(width: AppSpace.xs + 2),
+                    ],
+                    const NexconnChip(),
+                  ]),
                 ]),
               ),
             ]),
@@ -212,15 +221,80 @@ class _ChatHeaderState extends State<ChatHeader> {
         ),
       ),
       actions: [
-        IconButton(
-          tooltip: 'Chat info',
-          icon: const Icon(Icons.info_outline_rounded),
-          onPressed: () => _showInfo(context),
-        ),
+        if (_canCall) ...[
+          IconButton(
+            tooltip: _kind == ChatChannelKind.direct ? 'Voice call' : 'Group voice call',
+            icon: const Icon(Icons.call_outlined),
+            onPressed: () => _call(context, video: false),
+          ),
+          IconButton(
+            tooltip: _kind == ChatChannelKind.direct ? 'Video call' : 'Group video call',
+            icon: const Icon(Icons.videocam_outlined),
+            onPressed: () => _call(context, video: true),
+          ),
+        ] else
+          IconButton(
+            tooltip: 'Chat info',
+            icon: const Icon(Icons.info_outline_rounded),
+            onPressed: () => _showInfo(context),
+          ),
         const SizedBox(width: AppSpace.xs),
       ],
       bottom: const PreferredSize(preferredSize: Size.fromHeight(1), child: Divider(height: 1)),
     );
+  }
+
+  /// Calls go to people: not to the bot's DM or unknown channel kinds.
+  bool get _canCall => switch (_kind) {
+        ChatChannelKind.direct => widget.channelId != ChatDirectory.botId && _dir.person(widget.channelId)?.isBot != true,
+        ChatChannelKind.street || ChatChannelKind.bucket => true,
+        ChatChannelKind.other => false,
+      };
+
+  /// 1-to-1 call in a direct chat; group call with the channel's members in a Street / bucket group.
+  void _call(BuildContext context, {required bool video}) {
+    final title = widget.title ?? _dir.titleNow(widget.channelId, direct: widget.direct);
+    if (_kind == ChatChannelKind.direct) {
+      startDirectCall(context, widget.channelId, title: title, video: video);
+      return;
+    }
+    startGroupCall(context, widget.channelId, _groupMemberIds(), title: title, video: video);
+  }
+
+  /// Group members from Nexconn (group channel member query), plus bucket share holders from our server.
+  Future<List<String>> _groupMemberIds({int cap = 16}) async {
+    final ids = <String>{};
+    if (_kind == ChatChannelKind.bucket) {
+      for (final s in _dir.bucketNow(_ref)?.shares ?? const []) {
+        ids.add(s.user.id);
+      }
+    }
+    Future<void> page(GroupMemberRole role) async {
+      final done = Completer<void>();
+      final q = GroupChannel.createGroupMembersByRoleQuery(
+        GroupMembersByRoleQueryParams(groupId: widget.channelId, role: role, pageSize: 50),
+      );
+      await q.loadNextPage((r, err) {
+        for (final m in r?.data ?? const <GroupMemberInfo>[]) {
+          final id = m.userId;
+          if (id != null && id.isNotEmpty) ids.add(id);
+        }
+        if (!done.isCompleted) done.complete();
+      });
+      await done.future.timeout(const Duration(seconds: 5), onTimeout: () {});
+    }
+
+    try {
+      for (final role in [GroupMemberRole.owner, GroupMemberRole.admin, GroupMemberRole.normal]) {
+        await page(role);
+      }
+    } catch (e) {
+      debugPrint('[call] group member query failed: $e');
+    }
+    ids.remove(ChatDirectory.botId);
+    final out = ids.where((id) => _dir.person(id)?.isBot != true).take(cap).toList();
+    debugPrint('[call] group ${widget.channelId} members for call: $out');
+    return out;
   }
 
   void _showInfo(BuildContext context) {
@@ -513,4 +587,24 @@ class _Connecting extends StatelessWidget {
       ),
     );
   }
+}
+
+
+/// Small "Nexconn Chat · Call" badge under chat titles: what powers this conversation.
+class NexconnChip extends StatelessWidget {
+  const NexconnChip({super.key});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+        decoration: BoxDecoration(
+          color: AppColors.brandTint,
+          borderRadius: BorderRadius.circular(AppRadius.chip),
+        ),
+        child: Text(
+          'Nexconn Chat · Call',
+          style: AppText.tiny.copyWith(color: AppColors.brandDeep, fontSize: 10),
+          maxLines: 1,
+        ),
+      );
 }

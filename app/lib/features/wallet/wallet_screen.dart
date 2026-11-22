@@ -9,6 +9,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/theme/tokens.dart';
 import '../../widgets/widgets.dart';
 import '../../core/session/session_store.dart';
+import '../about/about_screen.dart';
 import '../orders/money_ui.dart';
 import '../orders/order_view.dart';
 
@@ -107,6 +108,13 @@ class _WalletScreenState extends State<WalletScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Wallet', style: AppText.title),
+        actions: [
+          IconButton(
+            tooltip: 'About Jugaad Street',
+            icon: const Icon(Icons.info_outline_rounded),
+            onPressed: () => openAbout(context),
+          ),
+        ],
       ),
       body: w == null
           ? (_error != null

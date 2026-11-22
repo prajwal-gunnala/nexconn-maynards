@@ -56,4 +56,7 @@ flutter {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
+    // Nexconn Call SDK for Android (1-to-1 + group voice/video). Same 26.2 line as the Flutter chat plugin; it
+    // runs on the IM connection the Flutter chat plugin opens in this process (see CallBridge.kt).
+    implementation("ai.nexconn.chat:call:26.2.0")
 }
