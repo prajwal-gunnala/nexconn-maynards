@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:ui' show ImageFilter;
 
 import 'package:ai_nexconn_chatui_plugin/ai_nexconn_chatui_plugin.dart' show Message;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -36,6 +38,10 @@ class StreetHomeScreen extends StatefulWidget {
 class _StreetHomeScreenState extends State<StreetHomeScreen> {
   StreamSubscription<MetadataUpdate>? _metaSub;
   StreamSubscription<Message>? _msgSub;
+  final _scroll = ScrollController();
+
+  /// How far the explainer card rides up over the hero's bottom edge.
+  static const double _overlap = 36;
 
   Community? _community;
   List<Bucket>? _buckets;
@@ -62,6 +68,7 @@ class _StreetHomeScreenState extends State<StreetHomeScreen> {
   void dispose() {
     _metaSub?.cancel();
     _msgSub?.cancel();
+    _scroll.dispose();
     super.dispose();
   }
 
@@ -158,168 +165,143 @@ class _StreetHomeScreenState extends State<StreetHomeScreen> {
       });
       _community = s.community;
     }
+    final top = MediaQuery.paddingOf(context).top;
     // Inactive tabs stay mounted (IndexedStack) with tickers off; keep their
     // Heroes out of the way so tags never clash across tabs.
     return HeroMode(
       enabled: TickerMode.valuesOf(context).enabled,
-      child: Scaffold(
-        backgroundColor: AppColors.canvas,
-        body: RefreshIndicator(
-          color: AppColors.brand,
-          edgeOffset: MediaQuery.paddingOf(context).top + 64,
-          onRefresh: _load,
-          child: CustomScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            slivers: [_header(s), ..._body(s)],
-          ),
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: SystemUiOverlayStyle.light.copyWith(statusBarColor: Colors.transparent),
+        child: Scaffold(
+          backgroundColor: AppColors.canvas,
+          body: Stack(children: [
+            RefreshIndicator(
+              color: AppColors.brand,
+              edgeOffset: top + _HomeTopBar.height,
+              onRefresh: _load,
+              child: CustomScrollView(
+                controller: _scroll,
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: _body(s, top),
+              ),
+            ),
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: _HomeTopBar(scroll: _scroll, initial: s.user?.initial ?? '?', onProfile: () => _profileMenu(s)),
+            ),
+          ]),
         ),
       ),
     );
   }
 
-  Widget _header(SessionStore s) {
-    final c = _community ?? s.community;
-    final place = [s.unit, c?.area].whereType<String>().join(' · ');
-    return SliverAppBar(
-      pinned: true,
-      toolbarHeight: 64,
-      backgroundColor: AppColors.canvas,
-      surfaceTintColor: Colors.transparent,
-      titleSpacing: AppSpace.gutter,
-      title: Row(children: [
-        const BrandMark(size: 36),
-        const SizedBox(width: AppSpace.sm),
-        Flexible(
-          child: Semantics(
-            button: true,
-            label: 'Community ${c?.name ?? ''}, tap to switch',
-            child: InkWell(
-              borderRadius: BorderRadius.circular(AppRadius.photo),
-              onTap: () => _switchCommunity(s),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpace.xs, vertical: AppSpace.xs),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-                  Row(mainAxisSize: MainAxisSize.min, children: [
-                    Flexible(
-                      child: Text(c?.name ?? 'Your street',
-                          style: AppText.heading.copyWith(fontSize: 17, fontWeight: FontWeight.w800), maxLines: 1, overflow: TextOverflow.ellipsis),
-                    ),
-                    const Icon(Icons.keyboard_arrow_down_rounded, size: 20, color: AppColors.ink),
-                  ]),
-                  if (place.isNotEmpty) Text(place, style: AppText.caption, maxLines: 1, overflow: TextOverflow.ellipsis),
-                ]),
-              ),
-            ),
-          ),
-        ),
-      ]),
-      actions: [
-        Padding(
-          padding: const EdgeInsets.only(right: AppSpace.md),
-          child: Semantics(
-            button: true,
-            label: 'Profile and settings',
-            child: InkWell(
-              customBorder: const CircleBorder(),
-              onTap: () => _profileMenu(s),
-              child: Container(
-                width: 44,
-                height: 44,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(color: AppColors.surface, shape: BoxShape.circle, border: Border.all(color: AppColors.line)),
-                child: Text(s.user?.initial ?? '?', style: AppText.heading.copyWith(color: AppColors.brand)),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  List<Widget> _body(SessionStore s) {
+  List<Widget> _body(SessionStore s, double top) {
     final buckets = _buckets;
-    if (buckets == null) {
-      return [
-        const SliverPadding(padding: EdgeInsets.only(top: AppSpace.sm), sliver: SliverToBoxAdapter(child: HomeSkeleton())),
-        if (_error != null) SliverToBoxAdapter(child: ErrorPanel(message: _error!, onRetry: _load)),
-      ];
-    }
-    final c = _community;
-    final live = buckets.where((b) => b.isLive).toList();
+    final c = _community ?? s.community;
+    final live = (buckets ?? const <Bucket>[]).where((b) => b.isLive).toList();
     final seen = <String>{};
     final people = [
       for (final b in sortBuckets(live, BucketSort.closingSoon))
         for (final u in b.people)
           if (seen.add(u.id)) u,
     ];
+    final loaded = buckets != null;
+    final hero = TogetherHero(
+      streetName: _streetTitle(c?.name ?? 'Your'),
+      communityName: c?.name ?? 'Your street',
+      place: s.unit,
+      people: people,
+      // One community snapshot (same numbers as the admin screen); only
+      // fall back to local counts if the server sent no stats.
+      members: loaded ? c?.stats?.members ?? c?.memberCount ?? people.length : null,
+      liveBuckets: loaded ? c?.stats?.liveBuckets ?? live.length : null,
+      saved: loaded ? c?.stats?.savedThisMonth ?? 0 : null,
+      month: DateFormat('MMMM').format(StreetClock.now().toLocal()),
+      onStart: () => context.push('/create'),
+      onChat: s.streetChannelId == null ? null : _openStreetChat,
+      onSwitchCommunity: () => _switchCommunity(s),
+      topInset: top + _HomeTopBar.height,
+      bottomInset: AppSpace.xxxl + _overlap,
+    );
+    Widget pad(Widget w) => Padding(padding: const EdgeInsets.symmetric(horizontal: AppSpace.gutter), child: w);
+    // Everything below the hero rides up by [_overlap] so the explainer card
+    // floats over the hero's rounded bottom edge. Hero and content share one
+    // box so the card paints on top (the viewport paints earlier slivers over
+    // later ones); at most three featured cards, so nothing to virtualise.
+    Widget below(List<Widget> children) => SliverToBoxAdapter(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            hero,
+            Transform.translate(
+              offset: const Offset(0, -_overlap),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                pad(const BucketExplainer()),
+                ...children,
+              ]),
+            ),
+          ]),
+        );
+
+    if (buckets == null) {
+      return [
+        below([
+          if (_error != null)
+            ErrorPanel(message: _error!, onRetry: _load)
+          else ...[
+            const SizedBox(height: AppSpace.xxxl),
+            const HomeSkeleton(),
+          ],
+        ]),
+      ];
+    }
     final featured = _featured(live);
     final feed = [..._liveFeed, ...feedFromBuckets(live, _raw)].take(6).toList();
     final meId = s.user?.id;
 
-    Widget pad(Widget w) => Padding(padding: const EdgeInsets.symmetric(horizontal: AppSpace.gutter), child: w);
-
     return [
-      SliverToBoxAdapter(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const SizedBox(height: AppSpace.xs),
-          pad(TogetherHero(
-            streetName: _streetTitle(c?.name ?? 'Your'),
-            people: people,
-            // One community snapshot (same numbers as the admin screen); only
-            // fall back to local counts if the server sent no stats.
-            members: c?.stats?.members ?? c?.memberCount ?? people.length,
-            liveBuckets: c?.stats?.liveBuckets ?? live.length,
-            saved: c?.stats?.savedThisMonth ?? 0,
-            month: DateFormat('MMMM').format(StreetClock.now().toLocal()),
-            onStart: () => context.push('/create'),
-            onChat: s.streetChannelId == null ? null : _openStreetChat,
-          )),
-          const SizedBox(height: AppSpace.md),
-          pad(const BucketExplainer()),
-          HomeSectionHeader('Join your neighbours',
-              subtitle: live.isEmpty ? 'Nothing open right now' : 'Closest to filling up. Every person helps.'),
-        ]),
-      ),
-      if (featured.isEmpty)
-        SliverToBoxAdapter(child: pad(_EmptyLive(onStart: () => context.push('/create'))))
-      else
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpace.gutter),
-          sliver: SliverList.separated(
-            itemCount: featured.length,
-            separatorBuilder: (_, _) => const SizedBox(height: AppSpace.lg),
-            itemBuilder: (_, i) => GroupBucketCard(bucket: featured[i], meId: meId),
-          ),
+      below([
+        HomeSectionHeader(
+          'Join your neighbours',
+          subtitle: live.isEmpty ? 'Nothing open right now' : 'Closest to filling up. Every person helps.',
         ),
-      SliverToBoxAdapter(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          if (live.length > featured.length)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(AppSpace.gutter, AppSpace.md, AppSpace.gutter, 0),
-              child: SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: OutlinedButton(
-                  onPressed: _seeAll,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.brandDeep,
-                    side: const BorderSide(color: Color(0xFFF1CDBF)),
-                    backgroundColor: AppColors.surface,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.photo)),
-                  ),
-                  child: Text('See all ${live.length} buckets', style: AppText.heading.copyWith(color: AppColors.brandDeep, fontSize: 14.5)),
+        if (featured.isEmpty)
+          pad(_EmptyLive(onStart: () => context.push('/create')))
+        else
+          for (var i = 0; i < featured.length; i++) ...[
+            if (i > 0) const SizedBox(height: AppSpace.xl),
+            pad(GroupBucketCard(bucket: featured[i], meId: meId)),
+          ],
+        if (live.length > featured.length)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(AppSpace.gutter, AppSpace.lg, AppSpace.gutter, 0),
+            child: SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: OutlinedButton(
+                onPressed: _seeAll,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.brandDeep,
+                  side: const BorderSide(color: AppColors.line),
+                  backgroundColor: AppColors.surface,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.card)),
                 ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Text('See all ${live.length} buckets', style: AppText.heading.copyWith(color: AppColors.brandDeep, fontSize: 14.5)),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.arrow_forward_rounded, size: 18, color: AppColors.brandDeep),
+                ]),
               ),
             ),
-          if (feed.isNotEmpty) ...[
-            const HomeSectionHeader('Happening on your street', subtitle: 'Live from the Street chat'),
-            pad(ActivityFeed(items: feed)),
-          ],
-          const HomeSectionHeader('Start your own bucket', subtitle: 'Anyone can start one. Your street fills it.'),
-          pad(StartTypeTiles(onTap: (_) => context.push('/create'))),
-          const SizedBox(height: AppSpace.xxxl),
-        ]),
-      ),
+          ),
+        if (feed.isNotEmpty) ...[
+          const HomeSectionHeader('Happening on your street', subtitle: 'Live from the Street chat', live: true),
+          pad(ActivityFeed(items: feed)),
+        ],
+        const HomeSectionHeader('Start your own bucket', subtitle: 'Anyone can start one. Your street fills it.'),
+        pad(StartTypeTiles(onTap: (_) => context.push('/create'))),
+        const SizedBox(height: AppSpace.xxxl),
+      ]),
     ];
   }
 
@@ -414,6 +396,81 @@ class _StreetHomeScreenState extends State<StreetHomeScreen> {
   }
 }
 
+/// Floating top bar over the hero: logo + wordmark and the profile avatar.
+/// Transparent at the top; once the page scrolls it fades into frosted
+/// tomato glass so the brand stays pinned.
+class _HomeTopBar extends StatelessWidget {
+  const _HomeTopBar({required this.scroll, required this.initial, required this.onProfile});
+
+  static const double height = 64;
+
+  final ScrollController scroll;
+  final String initial;
+  final VoidCallback onProfile;
+
+  @override
+  Widget build(BuildContext context) {
+    final top = MediaQuery.paddingOf(context).top;
+    final content = SizedBox(
+      height: top + height,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(AppSpace.gutter + 4, top, AppSpace.gutter, 0),
+        child: Row(children: [
+          const Flexible(
+            child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: BrandWordmark(size: 34, onDark: true)),
+          ),
+          const Spacer(),
+          Semantics(
+            button: true,
+            label: 'Profile and settings',
+            excludeSemantics: true,
+            child: GlassPanel(
+              radius: 22,
+              blur: false,
+              strong: true,
+              child: Material(
+                type: MaterialType.transparency,
+                child: InkWell(
+                  onTap: onProfile,
+                  child: SizedBox(
+                    width: 44,
+                    height: 44,
+                    child: Center(child: Text(initial, style: AppText.heading.copyWith(color: Colors.white, fontWeight: FontWeight.w800))),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ]),
+      ),
+    );
+    return ListenableBuilder(
+      listenable: scroll,
+      child: content,
+      builder: (context, child) {
+        final off = scroll.hasClients ? scroll.offset : 0.0;
+        final t = ((off - 8) / 64).clamp(0.0, 1.0);
+        if (t == 0) return child!;
+        return ClipRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 20 * t, sigmaY: 20 * t),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: [
+                  AppColors.brand.withValues(alpha: 0.9 * t),
+                  AppColors.brandDeep.withValues(alpha: 0.9 * t),
+                ]),
+                boxShadow: [BoxShadow(color: AppColors.brandNight.withValues(alpha: 0.18 * t), blurRadius: 16, offset: const Offset(0, 4))],
+              ),
+              child: child,
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _EmptyLive extends StatelessWidget {
   const _EmptyLive({required this.onStart});
 
@@ -425,8 +482,8 @@ class _EmptyLive extends StatelessWidget {
       padding: const EdgeInsets.all(AppSpace.xl),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: AppRadius.cardBorder,
-        border: Border.all(color: AppColors.line),
+        borderRadius: BorderRadius.circular(AppRadius.feature),
+        boxShadow: AppShadows.card,
       ),
       child: Column(
         children: [

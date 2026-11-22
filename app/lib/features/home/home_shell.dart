@@ -42,8 +42,9 @@ class HomeShell extends StatelessWidget {
   }
 }
 
-/// Licious-style bottom bar: outline icons + 11 sp labels, brand when active,
-/// hairline top border, and an emphasised "Start" tile in the middle.
+/// Floating bottom bar: a rounded white pill with a soft shadow, a tinted
+/// indicator behind the active tab, and a raised gradient "Start" button in
+/// the middle.
 class StreetNavBar extends StatelessWidget {
   const StreetNavBar({super.key, required this.currentIndex, required this.onTab, required this.onStart});
 
@@ -72,32 +73,39 @@ class StreetNavBar extends StatelessWidget {
           excludeSemantics: true,
           child: InkResponse(
             onTap: () => onTab(i),
-            radius: 36,
+            radius: 32,
             child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              SizedBox(
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOut,
+                width: 48,
                 height: 32,
+                decoration: BoxDecoration(color: on ? AppColors.brandTint : Colors.transparent, borderRadius: BorderRadius.circular(AppRadius.chip)),
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 180),
-                  child: Icon(on ? active : icon, key: ValueKey(on), color: color, size: 24),
+                  child: Icon(on ? active : icon, key: ValueKey(on), color: color, size: 22),
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(label, style: AppText.tiny.copyWith(color: color, fontWeight: on ? FontWeight.w700 : FontWeight.w600)),
+              const SizedBox(height: 3),
+              Text(label, style: AppText.tiny.copyWith(color: color, fontWeight: on ? FontWeight.w800 : FontWeight.w600)),
             ]),
           ),
         ),
       );
     }
 
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        border: Border(top: BorderSide(color: AppColors.line)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          height: 64,
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(AppSpace.md, AppSpace.xs, AppSpace.md, AppSpace.sm),
+        child: Container(
+          height: 66,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.feature),
+            border: Border.all(color: AppColors.line.withValues(alpha: 0.7)),
+            boxShadow: AppShadows.floating,
+          ),
           child: Row(children: [
             tab(0),
             tab(1),
@@ -108,16 +116,20 @@ class StreetNavBar extends StatelessWidget {
                 excludeSemantics: true,
                 child: InkResponse(
                   onTap: onStart,
-                  radius: 36,
+                  radius: 32,
                   child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                     Container(
-                      width: 44,
+                      width: 48,
                       height: 32,
-                      decoration: BoxDecoration(color: AppColors.brand, borderRadius: BorderRadius.circular(AppRadius.photo)),
+                      decoration: BoxDecoration(
+                        gradient: AppGradients.button,
+                        borderRadius: BorderRadius.circular(AppRadius.photo),
+                        boxShadow: AppShadows.brand,
+                      ),
                       child: const Icon(Icons.add_rounded, color: Colors.white, size: 24),
                     ),
-                    const SizedBox(height: 4),
-                    Text('Start', style: AppText.tiny.copyWith(color: AppColors.brandDeep, fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 3),
+                    Text('Start', style: AppText.tiny.copyWith(color: AppColors.brandDeep, fontWeight: FontWeight.w800)),
                   ]),
                 ),
               ),

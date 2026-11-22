@@ -11,15 +11,7 @@ enum FeedKind { joined, started, priceDrop, live }
 
 /// One row of "Happening on your street".
 class FeedItem {
-  const FeedItem({
-    required this.kind,
-    required this.action,
-    this.actor,
-    this.unit,
-    this.bucket,
-    this.detail,
-    this.at,
-  });
+  const FeedItem({required this.kind, required this.action, this.actor, this.unit, this.bucket, this.detail, this.at});
 
   final FeedKind kind;
 
@@ -59,15 +51,17 @@ List<FeedItem> feedFromBuckets(List<Bucket> live, Map<String, Json> raw, {int ma
       BucketType.trip => 'added $label',
       _ => 'joined with $label',
     };
-    out.add(FeedItem(
-      kind: FeedKind.joined,
-      actor: s.user.name,
-      unit: s.user.unit,
-      action: action,
-      bucket: b,
-      detail: shortTitle(b.title),
-      at: asTime(rawShare?['createdAt']),
-    ));
+    out.add(
+      FeedItem(
+        kind: FeedKind.joined,
+        actor: s.user.name,
+        unit: s.user.unit,
+        action: action,
+        bucket: b,
+        detail: shortTitle(b.title),
+        at: asTime(rawShare?['createdAt']),
+      ),
+    );
     used.add(b.id);
   }
 
@@ -98,15 +92,17 @@ List<FeedItem> feedFromBuckets(List<Bucket> live, Map<String, Json> raw, {int ma
   final fresh = started.where((e) => !used.contains(e.$1.id)).firstOrNull ?? started.firstOrNull;
   if (fresh != null) {
     final b = fresh.$1;
-    out.add(FeedItem(
-      kind: FeedKind.started,
-      actor: b.createdBy!.name,
-      unit: b.createdBy!.unit,
-      action: 'started a bucket',
-      bucket: b,
-      detail: shortTitle(b.title),
-      at: fresh.$2,
-    ));
+    out.add(
+      FeedItem(
+        kind: FeedKind.started,
+        actor: b.createdBy!.name,
+        unit: b.createdBy!.unit,
+        action: 'started a bucket',
+        bucket: b,
+        detail: shortTitle(b.title),
+        at: fresh.$2,
+      ),
+    );
   }
   return out.take(max).toList();
 }
@@ -126,7 +122,7 @@ FeedItem? feedFromEvent(Map<String, String> fields, DateTime? at, List<Bucket> b
   );
 }
 
-/// The feed card: rows separated by hairlines.
+/// The feed card: a timeline, one rail joining every row's avatar.
 class ActivityFeed extends StatelessWidget {
   const ActivityFeed({super.key, required this.items});
 
@@ -134,23 +130,33 @@ class ActivityFeed extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(color: AppColors.surface, borderRadius: AppRadius.cardBorder, border: Border.all(color: AppColors.line)),
-      clipBehavior: Clip.antiAlias,
-      child: Column(children: [
-        for (var i = 0; i < items.length; i++) ...[
-          if (i > 0) const Divider(indent: 64),
-          _FeedRow(item: items[i]),
-        ],
-      ]),
+    final r = BorderRadius.circular(AppRadius.feature);
+    return DecoratedBox(
+      decoration: BoxDecoration(borderRadius: r, boxShadow: AppShadows.card),
+      child: Material(
+        color: AppColors.surface,
+        borderRadius: r,
+        clipBehavior: Clip.antiAlias,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: AppSpace.sm),
+          child: Column(
+            children: [for (var i = 0; i < items.length; i++) _FeedRow(item: items[i], first: i == 0, last: i == items.length - 1)],
+          ),
+        ),
+      ),
     );
   }
 }
 
 class _FeedRow extends StatelessWidget {
-  const _FeedRow({required this.item});
+  const _FeedRow({required this.item, this.first = false, this.last = false});
 
   final FeedItem item;
+  final bool first;
+  final bool last;
+
+  /// Centre of the avatar column (row padding + half the 36 px avatar).
+  static const double _rail = AppSpace.lg + 18;
 
   @override
   Widget build(BuildContext context) {
@@ -161,8 +167,14 @@ class _FeedRow extends StatelessWidget {
     final Widget lead = switch (it.kind) {
       FeedKind.priceDrop => const _IconDot(icon: Icons.trending_down_rounded, fg: AppColors.save, bg: AppColors.saveTint),
       _ when it.actor == null => const _IconDot(icon: Icons.bolt_rounded, fg: AppColors.brand, bg: AppColors.brandTint),
-      _ => Stack(clipBehavior: Clip.none, children: [
-          AvatarStack(users: [User(id: it.actor!, name: it.actor!)], size: 36, max: 1),
+      _ => Stack(
+        clipBehavior: Clip.none,
+        children: [
+          AvatarStack(
+            users: [User(id: it.actor!, name: it.actor!)],
+            size: 36,
+            max: 1,
+          ),
           if (it.kind == FeedKind.started || it.kind == FeedKind.live)
             Positioned(
               right: -3,
@@ -178,50 +190,85 @@ class _FeedRow extends StatelessWidget {
                 child: Icon(it.kind == FeedKind.live ? Icons.bolt_rounded : Icons.add_rounded, size: 9, color: Colors.white),
               ),
             ),
-        ]),
+        ],
+      ),
     };
     final who = it.actor == null || it.kind == FeedKind.live ? null : (it.unit == null ? it.actor! : '${it.actor} · ${it.unit}');
     return Semantics(
       button: b != null,
       child: InkWell(
         onTap: b == null ? null : () => openBucket(context, b.id),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(AppSpace.lg, AppSpace.md, AppSpace.md, AppSpace.md),
-          child: Row(children: [
-            SizedBox(width: 36, child: lead),
-            const SizedBox(width: AppSpace.md),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text.rich(
-                  TextSpan(children: [
-                    if (who != null) TextSpan(text: '$who ', style: AppText.label.copyWith(fontSize: 13.5, fontWeight: FontWeight.w700)),
-                    TextSpan(
-                      text: it.action,
-                      style: AppText.body.copyWith(
-                        fontSize: 13.5,
-                        height: 1.3,
-                        fontWeight: it.kind == FeedKind.priceDrop ? FontWeight.w700 : FontWeight.w500,
-                        color: it.kind == FeedKind.priceDrop ? AppColors.save : AppColors.ink,
-                      ),
-                    ),
-                  ]),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (detail.isNotEmpty) ...[
-                  const SizedBox(height: 2),
-                  Text(detail, style: AppText.caption, maxLines: 1, overflow: TextOverflow.ellipsis),
-                ],
-              ]),
-            ),
-            if (b != null) ...[
-              const SizedBox(width: AppSpace.md),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: SizedBox(width: 44, height: 44, child: CardPhoto(bucket: b)),
+        child: Stack(
+          children: [
+            if (!(first && last))
+              Positioned(
+                left: _rail - 1,
+                width: 2,
+                top: first ? AppSpace.md + 18 : 0,
+                bottom: last ? null : 0,
+                height: last ? AppSpace.md + 18 : null,
+                child: const ColoredBox(color: AppColors.line),
               ),
-            ],
-          ]),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(AppSpace.lg, AppSpace.md, AppSpace.lg, AppSpace.md),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 36,
+                    child: DecoratedBox(
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppColors.surface,
+                        boxShadow: [BoxShadow(color: AppColors.surface, spreadRadius: 3)],
+                      ),
+                      child: lead,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpace.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text.rich(
+                          TextSpan(
+                            children: [
+                              if (who != null)
+                                TextSpan(
+                                  text: '$who ',
+                                  style: AppText.label.copyWith(fontSize: 13.5, fontWeight: FontWeight.w700),
+                                ),
+                              TextSpan(
+                                text: it.action,
+                                style: AppText.body.copyWith(
+                                  fontSize: 13.5,
+                                  height: 1.3,
+                                  fontWeight: it.kind == FeedKind.priceDrop ? FontWeight.w700 : FontWeight.w500,
+                                  color: it.kind == FeedKind.priceDrop ? AppColors.save : AppColors.ink,
+                                ),
+                              ),
+                            ],
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (detail.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(detail, style: AppText.caption, maxLines: 1, overflow: TextOverflow.ellipsis),
+                        ],
+                      ],
+                    ),
+                  ),
+                  if (b != null) ...[
+                    const SizedBox(width: AppSpace.md),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(AppRadius.photo),
+                      child: SizedBox(width: 48, height: 48, child: CardPhoto(bucket: b)),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -237,9 +284,9 @@ class _IconDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
-        child: Icon(icon, color: fg, size: 20),
-      );
+    width: 36,
+    height: 36,
+    decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
+    child: Icon(icon, color: fg, size: 20),
+  );
 }

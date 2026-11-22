@@ -96,11 +96,11 @@ void _shot(
 }) {
   testWidgets(desc, (t) async {
     setup?.call();
-    await shoot(t, name, screen(), overrides: overrides, act: act);
+    await _realShadows(() => shoot(t, name, screen(), overrides: overrides, act: act));
   });
   testWidgets('$desc @360', (t) async {
     setup?.call();
-    await shoot(t, '${name}_360', screen(), overrides: overrides, act: (t) async {
+    await _realShadows(() => shoot(t, '${name}_360', screen(), overrides: overrides, act: (t) async {
       t.view.devicePixelRatio = 3;
       t.view.physicalSize = const Size(360, 800) * 3;
       await t.pump(const Duration(milliseconds: 200));
@@ -111,8 +111,19 @@ void _shot(
       });
       await t.pump(const Duration(milliseconds: 100));
       if (act != null) await act(t);
-    });
+    }));
   });
+}
+
+/// Real blurred shadows (flutter_test draws them solid by default) so the shots
+/// match the device. Restored before the test's invariant check.
+Future<void> _realShadows(Future<void> Function() body) async {
+  debugDisableShadows = false;
+  try {
+    await body();
+  } finally {
+    debugDisableShadows = true;
+  }
 }
 
 /// Past rows for each outcome, including a Book & Meet that met at the market.

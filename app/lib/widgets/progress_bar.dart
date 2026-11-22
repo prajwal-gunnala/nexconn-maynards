@@ -23,6 +23,7 @@ class AppProgressBar extends StatelessWidget {
     this.height = 8,
     this.color = AppColors.brand,
     this.track = AppColors.line,
+    this.gradient,
   });
 
   /// 0..1
@@ -31,6 +32,9 @@ class AppProgressBar extends StatelessWidget {
   final double height;
   final Color color;
   final Color track;
+
+  /// Optional fill gradient (overrides [color]).
+  final Gradient? gradient;
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +55,7 @@ class AppProgressBar extends StatelessWidget {
             builder: (context, t, _) => Container(
               width: w * t,
               height: height,
-              decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(height)),
+              decoration: BoxDecoration(color: gradient == null ? color : null, gradient: gradient, borderRadius: BorderRadius.circular(height)),
             ),
           ),
           for (final m in markers)
